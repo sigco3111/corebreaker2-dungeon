@@ -1,0 +1,13 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const Z=location.hash.slice(1)||1;const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+Z;
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res={n:0,ringKnight:0,ringProp:0,ringOther:0,propInFrontButAssist:0,propInFrontKept:0};
+for(const g of C.GS){g.gmode='open';g.bob=0;for(const c of Object.keys(g.PARTS)){const m=g.marks[c];
+ for(let off=-3.5;off<=3.5;off+=.05){g.off=off;const p=C.projectPoint(m.x+off,m.y+.04,m.z+.25);if(Math.abs(p[0])>1||Math.abs(p[1])>1)continue;
+  const b=C.pickHit(p[0],p[1]).best;res.n++;
+  // is a prop actually in front of the ring along this ray? ask pickHit with assist disabled by moving marker flag
+  const mk=g.PARTS[c];const alive=mk.alive;mk.alive=false;const b0=C.pickHit(p[0],p[1]).best;mk.alive=alive;
+  const propFront=b0&&b0.kind==='prop';
+  if(propFront){if(b&&b.kind==='prop')res.propInFrontKept++;else res.propInFrontButAssist++;}
+  if(b){if(b.kind==='knight'&&b.g===g)res.ringKnight++;else if(b.kind==='prop')res.ringProp++;else res.ringOther++;}
+ }g.off=g.slot.x;}}
+document.title='done:'+JSON.stringify(res);},3000);</script>

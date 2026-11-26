@@ -498,7 +498,7 @@ function pickHit(nx, ny, t0 = 0) {
     if (h && (!best || h.t < best.t)) best = { kind: 'knight', g, ...h, wp: h.p.clone().add(new THREE.Vector3(g.off, gb, 0)) };
     if (g.kstate === 'guard' && g.marks) for (const c in g.marks) {   // 표식(노란 고리)을 겨누면 그 부위가 맞는다: 조준 보조
       const m = g.marks[c]; if (!(g.PARTS[c] && g.PARTS[c].alive)) continue;
-      const msp = new THREE.Sphere(new THREE.Vector3(m.x + g.off, m.y + .04 + gb, m.z + .25), .17 * Math.max(.9, g.rel)); const mp = ray.intersectSphere(msp, new THREE.Vector3()); if (!mp) continue;
+      const msp = new THREE.Sphere(new THREE.Vector3(m.x + g.off, m.y + .04 + gb, m.z + .25), .25 * Math.max(.9, g.rel)); const mp = ray.intersectSphere(msp, new THREE.Vector3()); if (!mp) continue;
       const mt = mp.distanceTo(ray.origin); if (best && best.kind === 'prop' && best.t < mt - .3) continue;
       let bi = -1, bd = 1e9; const K = g.K; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { const dx = K.pos[i * 3] - m.x, dy = K.pos[i * 3 + 1] - m.y, dz = K.pos[i * 3 + 2] - m.z, d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
       if (bi < 0) continue; if (best && best.kind === 'knight' && best.g === g && K.cat[best.i] == c) continue;
