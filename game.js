@@ -185,9 +185,9 @@ const GTYPES = {
   barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } } };
 const SLOTS = [
-  { x: -2.4, z: -6.5, H: 2.3, amp: .8, per: 6.4, gopen: 2.4, gblock: 1.2 },
-  { x: 0, z: -7.6, H: 2.5, amp: .6, per: 7.6, gopen: 3.0, gblock: 1.4 },
-  { x: 2.4, z: -6.5, H: 2.3, amp: .8, per: 5.6, gopen: 2.0, gblock: 1.1 }];
+  { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
+  { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
+  { x: 3.0, z: -6.5, H: 2.0, amp: .4, per: 4.2, gopen: 2.0, gblock: 1.1 }];
 const GOKEYS = ['knight', 'barbarian', 'mage'];
 const GWARN = .5;
 const GS = [];
@@ -304,7 +304,7 @@ function hitKnight(h) {
 }
 
 // 구조물 (측면 단 등)
-const obst = [[-2.4, -6.5, 1.9], [0, -7.6, 1.9], [2.4, -6.5, 1.9], [0, -4.2, 2.4]];
+const obst = [[-3.0, -6.5, 1.9], [0, -7.6, 1.9], [3.0, -6.5, 1.9], [0, -4.2, 2.4]];
 function block(x, z, w, d, h, y0, tint) {
   const pt = 0.2, nx = Math.round(w / pt), nz = Math.round(d / pt), ny = Math.round(h / pt); const cells = [];
   for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) { const edge = i == 0 || i == nx - 1 || k == 0 || k == nz - 1 || j == ny - 1; if (!edge) continue; cells.push([x - w / 2 + (i + .5) * pt, y0 + (j + .5) * pt, z - d / 2 + (k + .5) * pt, j == ny - 1]); }
@@ -313,11 +313,11 @@ function block(x, z, w, d, h, y0, tint) {
   sc.add(m);
 }
 function platform(side, h) {
-  const w = 2.4, d = 4.0, zc = -6.2 - R() * 2.6, x = side * (6.1 - w / 2 - 0.05);
+  const w = 1.9, d = 4.0, zc = -6.2 - R() * 2.6, x = side * (6.1 - w / 2 - 0.05);
   block(x, zc, w, d, h, 0, [0, 0, 0.03 * side]);
   const n = 3 + Math.floor(R() * 3); const pp = [];
   for (let k = 0, t = 0; k < n && t < 60; t++) {
-    const px = x + (R() * 2 - 1) * (w / 2 - .78), pz = zc + (R() * 2 - 1) * (d / 2 - .55);
+    const px = x + (R() * 2 - 1) * (w / 2 - .6), pz = zc + (R() * 2 - 1) * (d / 2 - .55);
     const nm = T.p[Math.floor(R() * T.p.length)]; const dd = P[nm]; if (!dd) continue; if (pp.some(q => Math.hypot(q[0] - px, q[1] - pz) < .95)) continue;
     pp.push([px, pz]); put(nm, px, pz, .8 + R() * .25, Math.floor(R() * 4) * Math.PI / 2, h, true); k++;
   }
@@ -526,6 +526,7 @@ function runStage() {
     sim(.5); info.guardians = GS.map(g => g.name + ':' + g.kstate + ':' + g.partsBroken);
   }
   if (STAGE >= 3) { for (const g of GS) if (g.kstate === 'exposed') { aimAt(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0))); sim(.1); } sim(STAGE === 3 ? .45 : STAGE === 4 ? 1.4 : 5); info.guardians = GS.map(g => g.name + ':' + g.kstate); }
+  { const rg = GS.map(g => [g.slot.x - g.slot.amp + g.K.bb.min.x, g.slot.x + g.slot.amp + g.K.bb.max.x]); info.gaps = [+(rg[1][0] - rg[0][1]).toFixed(2), +(rg[2][0] - rg[1][1]).toFixed(2)]; info.edge = [+rg[0][0].toFixed(2), +rg[2][1].toFixed(2)]; }
   if (q.get('adv')) { sim(+q.get('adv')); info.off = GS.map(g => +g.off.toFixed(2)); info.modes = GS.map(g => g.gmode); }
   info.hits = hitsLanded; info.shots = shots;
   document.title = 'done:' + JSON.stringify(info);
