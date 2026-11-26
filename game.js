@@ -6,8 +6,8 @@ const TEST = STAGE !== 0;
 let summoned = false;
 const SUMMON = q.get('mode') === 'summon' || (!TEST && q.get('mode') !== 'classic'); summoned = !SUMMON;   // 새 루프: 정지 소품 파괴 -> 소환 게이지 -> 수호자 무리
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, bt2: {}, sup: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
-function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!o.bt2) o.bt2 = {}; if (!o.sup) o.sup = {}; if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, bt2: {}, sup: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2], md: [0, 0, 0, 0, 0], mu: {} });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!o.bt2) o.bt2 = {}; if (!Array.isArray(o.md)) o.md = [0, 0, 0, 0, 0]; if (!o.mu || typeof o.mu !== 'object') o.mu = {}; if (!o.sup) o.sup = {}; if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
@@ -16,6 +16,14 @@ const nextZone = z => z % 8 + 1;
 const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
 const SUPA = Object.assign({}, save.sup);
 
+// 탄종 개조: 탄종마다 2종 중 1개를 장착(구매 후 상점에서 자유롭게 교체). 장단점이 갈리는 선택형 소비처.
+const MODS = [
+  [{ n: '속사', e: '연사 +30%, 장전 +30%', cd: .7, rl: 1.3, p: 350 }, { n: '정밀', e: '명중 반경 +50%, 연사 -15%', rad: 1.5, cd: 1.15, p: 350 }],
+  [{ n: '집중', e: '파편 7발, 좁게 모여 강함(파편당 +40%)', pel: 7, spr: .55, dm: 1.4, p: 450 }, { n: '확산', e: '파편 14발, 넓고 약함(파편당 -20%)', pel: 14, spr: 1.4, dm: .8, p: 450 }],
+  [{ n: '과충전', e: '게이지 획득 +50%', gg: 1.5, p: 450 }, { n: '천공', e: '관통 +2, 게이지 획득 -20%', pe: 2, gg: .8, p: 450 }],
+  [{ n: '대형 폭발', e: '반경 +30%, 연사 -25%', br: 1.3, cd: 1.33, p: 550 }, { n: '속폭', e: '연사 +40%, 반경 -15%', br: .85, cd: .7, p: 550 }],
+  [{ n: '분기', e: '번개 +3회, 사거리 -20%', hop: 3, rng: .8, p: 600 }, { n: '장거리', e: '번개 -1회, 사거리 +50%', hop: -1, rng: 1.5, p: 600 }]];
+const modOf = w => { const i = (save.md && save.md[w]) || 0; return i ? MODS[w][i - 1] : {}; };
 const THEMES = [
   { n: '술창고', p: ['barrel_large', 'barrel_small', 'barrel_small_stack', 'keg', 'bottle_A_green', 'bottle_B_brown', 'box_small'], fl: 'floor_dirt_large', c: 0xffb060 },
   { n: '보물방', p: ['chest', 'chest_gold', 'coin_stack_large', 'coin_stack_medium', 'key', 'box_small'], fl: 'floor_tile_large', c: 0xfff4a8 },
@@ -174,6 +182,7 @@ function damageProp(e, p, radius) {
     if (dx * dx + dy * dy + dz * dz < r2) { removeVoxel(e, i, (k++ % 2) === 0, null); }
   }
   e.mesh.instanceMatrix.needsUpdate = true;
+  if (SUMMON && !summoned && !e.dead && typeof sgVal === 'number') { const v = e.total > 1500 ? 2 : 1, tg = v * Math.min(1, (e.total - e.count) / (e.total * .6)), ad = tg - (e.sgGiven || 0); if (ad > 0) { e.sgGiven = tg; sgVal += ad; updSG(); } }   // 부술 때까지가 아니라 깎는 만큼 게이지가 찬다
   if (!e.dead && e.count < e.total * .4) breakProp(e);
 }
 // ---------- 효과음 (WebAudio 합성, 외부 에셋 없음) ----------
@@ -498,7 +507,7 @@ function clearOccluders(fx) {
 if (!SUMMON) clearOccluders(false);
 let TOTAL_PROPS = props.length; let autoCleared = 0;
 // ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
-const SG_NEED = Math.max(8, Math.ceil(TOTAL_PROPS * .45)); let sgVal = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0;
+const SG_NEED = Math.min(12, Math.max(8, Math.ceil(TOTAL_PROPS * .45))); let sgVal = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0;
 const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:15vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
 sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
 function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.min(sgVal, SG_NEED)}/${SG_NEED}`; }
@@ -513,7 +522,7 @@ function summonGuardians() {
   for (const g of GS) for (const c in g.marks) relocateMark(g, c);
   sfx('warn'); shake = Math.max(shake, .3); setStatus(); updSG(); flashText('수호자 출현!<br>장비를 먼저 부숴라');
 }
-function addSummonGauge(e) { if (summoned) return; sgVal += e.total > 1500 ? 2 : 1; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }
+function addSummonGauge(e) { if (summoned) return; sgVal += (e.total > 1500 ? 2 : 1) - (e.sgGiven || 0); e.sgGiven = e.total > 1500 ? 2 : 1; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }
 
 // ---------- 사격 ----------
 const proj = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd54a }));
@@ -568,7 +577,7 @@ const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = SUPA.pi
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
   if (ammo[2] >= magN(2)) return;
-  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1) * (ZR.gg || 1) * (wLvl(2) >= 7 ? 1.25 : 1);
+  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1) * (ZR.gg || 1) * (wLvl(2) >= 7 ? 1.25 : 1) * (modOf(2).gg || 1);
   if (gauge >= GAUGE_MAX) { gauge = 0; ammo[2] = magN(2); $('tc').innerHTML = '게이지 완충!<br>관통탄 장전'; flashT = .9; sfx('warn'); }
 }
 function applyHit(h) {
@@ -587,7 +596,7 @@ function applyHit(h) {
 }
 // 폭발탄: 착탄 지점 주변 소품을 한꺼번에 부수고, 수호자 장비에는 약한 피해(방어 중이면 제외)
 function blast(p) {
-  const R = (1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0)) * (SUPA.blast ? 1.25 : 1);
+  const R = (1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0)) * (SUPA.blast ? 1.25 : 1) * (modOf(3).br || 1);
   shockwave(p); burst(p.x, p.y, p.z, 255, 150, 40, 24, 7, .09); shake = Math.max(shake, .2); sfx('block');
   for (const e of props.slice()) { if (e.dead) continue; const c = e.bb.clone().expandByScalar(R); if (!c.containsPoint(p)) continue; damageProp(e, p, R * .75); }
   for (const g of GS) { if (g.kstate !== 'guard' || g.gmode === 'block') continue; const K = g.K, gb = g.bob || 0; let bi = -1, bd = R * R;
@@ -611,7 +620,7 @@ function chainTargets() {
   return out;
 }
 function chainProps(h) {
-  const n = 3 + Math.floor((effLv(4) - 1) / 2) + (wLvl(4) >= 7 ? 2 : 0) + (SUPA.bolt ? 2 : 0), RNG = 3.4;
+  const n = 3 + Math.floor((effLv(4) - 1) / 2) + (wLvl(4) >= 7 ? 2 : 0) + (SUPA.bolt ? 2 : 0) + (modOf(4).hop || 0), RNG = 3.4 * (modOf(4).rng || 1);
   const cand = chainTargets(); let cur = h.p.clone(), used = new Set(); if (h.e) used.add(h.e);
   for (let k = 0; k < n; k++) {
     let best = null, bd = RNG; for (const t of cand) { if (used.has(t) || (t.k === 'prop' && used.has(t.e))) continue; const d = t.pos.distanceTo(cur); if (d < bd) { bd = d; best = t; } }
@@ -634,9 +643,9 @@ const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
-const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1));
-const wRad = w => WEAPONS[w].rad * (1 + .1 * (effLv(w) - 1));
-const wPierce = w => w === 2 ? 2 + Math.floor(effLv(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
+const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1)) * (modOf(w).cd || 1);
+const wRad = w => WEAPONS[w].rad * (1 + .1 * (effLv(w) - 1)) * (modOf(w).rad || 1);
+const wPierce = w => w === 2 ? 2 + Math.floor(effLv(w) - 1) + (modOf(2).pe || 0) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
 const upCost = w => { const L = wLvl(w); return L < 5 ? 30 * L : Math.round(25 * Math.pow(L, 1.5) / 5) * 5; };
 function collectShot(nx, ny, mult, pierce, pshot, dmg) {   // 발사 순간에 조준점 기준으로 맞는 대상을 확정(표적 태그와 일치)
   const hits = []; let t0 = 0;
@@ -670,21 +679,22 @@ window.addEventListener('keydown', e => {
   if (k >= '1' && k <= '5') { const w = +k - 1; if (save.wu[w]) selectWeapon(w); else { $('tc').innerHTML = WEAPONS[w].n + ' 잠김<br>결과 화면 상점에서 해금'; flashT = .9; } }
   else if (k === 'r') {
     if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
-    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
+    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (modOf(cw).rl || 1) * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
 });
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${save.sup[x.id] ? 'disabled' : (save.coins >= x.p ? '' : 'disabled')}>${x.n} · ${x.e} · ${save.sup[x.id] ? '준비됨' : x.p}</button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd pk" style="opacity:.7">${PERKS[i]}</div>` + modHTML(i) + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${save.sup[x.id] ? 'disabled' : (save.coins >= x.p ? '' : 'disabled')}>${x.n} · ${x.e} · ${save.sup[x.id] ? '준비됨' : x.p}</button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
+function modHTML(w) { const cur = save.md[w] || 0; return '<div class="mods">' + MODS[w].map((m, k) => { const own = save.mu[w + ':' + (k + 1)], on = cur === k + 1; return `<button class="md${on ? ' on' : ''}" data-w="${w}" data-k="${k + 1}" title="${m.e}" ${(!own && save.coins < m.p) ? 'disabled' : ''}>${m.n}${on ? ' ✔' : own ? '' : ' ' + m.p}</button>`; }).join('') + `</div><div class="cd" style="opacity:.75">${cur ? MODS[w][cur - 1].n + ': ' + MODS[w][cur - 1].e : '개조: 아래에서 장착(다시 누르면 해제)'}</div>`; }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
   const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.z ? THEMES[h.z - 1].n + ' ' : ''}${h.v}번째</td><td>${h.t}초</td><td>${h.a}%</td><td>${h.c}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
   return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
-function bindShop(box) { bindRec(box); box.querySelectorAll('.sp').forEach(b => { b.onclick = () => { const x = SUPPLIES.find(q => q.id === b.dataset.s); if (!save.sup[x.id] && save.coins >= x.p) { save.coins -= x.p; save.sup[x.id] = 1; writeSave(save); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.unl').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (!save.wu[w] && save.coins >= WEAPONS[w].unlock) { save.coins -= WEAPONS[w].unlock; save.wu[w] = 1; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
+function bindShop(box) { bindRec(box); box.querySelectorAll('.md').forEach(b => { b.onclick = () => { const w = +b.dataset.w, k = +b.dataset.k, key = w + ':' + k; if (!save.mu[key]) { if (save.coins < MODS[w][k - 1].p) return; save.coins -= MODS[w][k - 1].p; save.mu[key] = 1; save.md[w] = k; } else save.md[w] = save.md[w] === k ? 0 : k; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); }; }); box.querySelectorAll('.sp').forEach(b => { b.onclick = () => { const x = SUPPLIES.find(q => q.id === b.dataset.s); if (!save.sup[x.id] && save.coins >= x.p) { save.coins -= x.p; save.sup[x.id] = 1; writeSave(save); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.unl').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (!save.wu[w] && save.coins >= WEAPONS[w].unlock) { save.coins -= WEAPONS[w].unlock; save.wu[w] = 1; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
@@ -694,15 +704,15 @@ function fire(nx, ny) {
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
-  const N = cw === 1 ? 9 : 1;
+  const N = cw === 1 ? (modOf(1).pel || 9) : 1;
   for (let q = 0; q < N; q++) {
     let ax = nx, ay = ny;
-    if (cw === 1) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .16; ax += Math.cos(a) * r * .6; ay += Math.sin(a) * r; }
+    if (cw === 1) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .16 * (modOf(1).spr || 1); ax += Math.cos(a) * r * .6; ay += Math.sin(a) * r; }
     const { best, far } = pickHit(ax, ay);
     const target = best ? (best.wp || best.p) : far;
     const dist = ORIGIN.distanceTo(target);
     const spd = cw === 0 ? 60 : cw === 1 ? 34 + Math.random() * 14 : 90;
-    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, hits: collectShot(ax, ay, cw === 1 ? .62 : wRad(cw), wPierce(cw), cw === 2, cw === 1 ? .5 : 1).map(h => { h.wt = cw; return h; }), kind: cw });
+    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, hits: collectShot(ax, ay, cw === 1 ? .62 : wRad(cw), wPierce(cw), cw === 2, cw === 1 ? .5 * (modOf(1).dm || 1) : 1).map(h => { h.wt = cw; return h; }), kind: cw });
   }
 }
 const GEO = { cap: new THREE.CapsuleGeometry(.06, .34, 4, 8), pel: new THREE.SphereGeometry(.07, 8, 6), spike: new THREE.ConeGeometry(.09, 1.1, 8), trail: new THREE.CylinderGeometry(.03, .005, 1, 6, 1, true) };

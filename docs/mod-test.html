@@ -1,0 +1,14 @@
+<!doctype html><body><script>
+localStorage.setItem('cb2.save.v1', JSON.stringify({coins:5000,wu:[1,1,1,1,1]}));
+const f=document.createElement('iframe'); const q=new URLSearchParams(location.search); f.width=q.get('w')||1266; f.height=q.get('h')||585; f.style.border=0; document.body.style.margin=0; document.body.style.overflow='hidden'; f.src='../index.html?visit=2&zone=2&mode=summon'; document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{ try{
+ const d=f.contentDocument, w=f.contentWindow, C=w.__cb2; const log=[];
+ d.getElementById('go').click(); C.showResult&&C.showResult();
+ const md=()=>[...d.querySelectorAll('.md')];
+ log.push({n:md().length});
+ md()[0].click(); md()[3].click(); md()[9].click(); md()[8].click(); md()[8].click();
+ log.push({save:JSON.stringify({md:C.save.md,mu:C.save.mu,coins:C.save.coins})});
+ log.push({txt:d.querySelector('.shop')?d.querySelector('.shop').innerText.replace(/\n/g,'|').slice(0,500):'noshop'});
+ document.title='RES'+JSON.stringify(log);
+ }catch(e){document.title='ERR'+e.message}},3000);
+</script>
