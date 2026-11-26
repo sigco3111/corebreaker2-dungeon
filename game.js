@@ -5,7 +5,8 @@ const STAGE = +(q.get('stage') || 0);        // 테스트용: 스크립트 진�
 const TEST = STAGE !== 0;
 const ZONE = +(q.get('zone') || 2);
 const SAVE_KEY = 'cb2.save.v1';
-function loadSave() { try { return Object.assign({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {} }, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { return { plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {} }; } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {} });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
@@ -159,7 +160,7 @@ function damageProp(e, p, radius) {
   if (!e.dead && e.count < e.total * .4) breakProp(e);
 }
 function breakProp(e) {
-  e.dead = true; propsBroken++;
+  e.dead = true; propsBroken++; save.dex[e.name] = (save.dex[e.name] || 0) + 1;
   let c = 0;
   for (let i = 0; i < e.n; i++) if (e.alive[i]) { removeVoxel(e, i, (c++ % 3) === 0, null); }
   e.mesh.instanceMatrix.needsUpdate = true; sc.remove(e.mesh);
@@ -290,7 +291,7 @@ function hitKnight(h) {
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
     const pt = g.PARTS[c]; pt.hp--;
-    let k = 0; const cr = .3 * g.rel;
+    let k = 0; const cr = .3 * g.rel * (h.mult || 1); if ((h.mult || 1) >= 1.8) pt.hp--;
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
       if (dx * dx + dy * dy + dz * dz < cr * cr) { K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO); if ((k++ % 2) == 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 5, Math.random() * 4 + 1, Math.random() * 5, g.kpt, 0); }
@@ -374,9 +375,9 @@ proj.visible = false; sc.add(proj);
 const flying = [];
 let cooldown = 0, started = TEST, shake = 0;
 const rc = new THREE.Raycaster();
-function pickHit(nx, ny) {
+function pickHit(nx, ny, t0 = 0) {
   rc.setFromCamera(new THREE.Vector2(nx, ny), cam);
-  ray.copy(rc.ray);
+  ray.copy(rc.ray); if (t0) ray.origin.addScaledVector(ray.direction, t0);
   let best = null;
   for (const e of props) { if (e.dead) continue; const h = marchVoxels(e, ray); if (h && (!best || h.t < best.t)) best = { kind: 'prop', e, ...h }; }
   for (const g of GS) {
@@ -401,28 +402,58 @@ function applyHit(h) {
   hitsLanded++;
   if ((h.kind === 'knight' || h.kind === 'core') && h.g.gmode === 'block') {
     const q = h.wp || h.p; burst(q.x, q.y, q.z, 150, 190, 255, 8, 4, .05); shake = Math.max(shake, .1);
-    $('tc').innerHTML = '수호 기사<br>방어! 막혔다'; flashT = .6; deflects++; return;
+    $('tc').innerHTML = '수호자 방어!<br>막혔다'; flashT = .6; deflects++; return 'stop';
   }
-  if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55); }
+  if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); }
   else if (h.kind === 'knight') hitKnight(h);
   else if (h.kind === 'core') collapse(h.g);
   else if (h.kind === 'wall') burst(h.p.x, h.p.y, h.p.z, 255, 220, 120, 4, 2, .03);
 }
 const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
+// ---------- 무기 3종 (기본탄 / 범위탄 / 관통탄), 각 5단계 강화 ----------
+const WEAPONS = [
+  { n: '기본탄', d: '빠르게 연사', cd: .22, rad: 1, pierce: 0, col: 0xffd54a },
+  { n: '범위탄', d: '넓게 깨짐, 장비에 2배 피해', cd: .5, rad: 2.0, pierce: 0, col: 0xff7a4a },
+  { n: '관통탄', d: '여러 물체를 뚫음', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff }];
+let cw = 0;
+const wLvl = w => save.wl[w] || 1;
+const wCd = w => WEAPONS[w].cd * (1 - .06 * (wLvl(w) - 1));
+const wRad = w => WEAPONS[w].rad * (1 + .1 * (wLvl(w) - 1));
+const wPierce = w => w === 2 ? 2 + (wLvl(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
+const upCost = w => 30 * wLvl(w);
+function resolveShot(nx, ny, mult, pierce) {
+  let t0 = 0;
+  for (let k = 0; k <= pierce; k++) {
+    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult;
+    const stop = applyHit(h); if (stop || h.kind === 'wall' || h.kind === 'core') break;
+    t0 += h.t + .25;
+  }
+}
+function selectWeapon(w) { cw = w; proj.material.color.setHex(WEAPONS[w].col); renderBar(); }
+function renderBar() {
+  const b = $('bot'); b.innerHTML = '';
+  WEAPONS.forEach((W, i) => { const d = document.createElement('div'); d.textContent = `${W.n} Lv${wLvl(i)}`; d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.style.display = 'inline-block'; d.style.margin = '0 .6vmin'; d.style.borderColor = i === cw ? '#ffd54a' : 'rgba(255,255,255,.25)'; d.style.opacity = i === cw ? 1 : .65; d.style.background = i === cw ? 'rgba(80,60,0,.7)' : 'rgba(0,0,0,.5)'; d.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); selectWeapon(i); }; b.appendChild(d); });
+}
+const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
+function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
+function shopHTML() {
+  return `<div style="margin:1.2vmin 0;font-size:1.9vmin">보유 코인 <b>${save.coins}</b></div>` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div style="margin:.6vmin 0;font-size:1.8vmin">${W.n} Lv${L}/5 <span style="opacity:.7">${W.d}</span> ` + (L >= 5 ? '<b>최대</b>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}코인</button>`) + '</div>'; }).join('') + `<div style="margin-top:1vmin;font-size:1.5vmin;opacity:.85">수집 도감: ${dexHTML()}</div>`;
+}
+function bindShop(box) { box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < 5) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
-  cooldown = TEST ? 0 : .22; shots++;
+  cooldown = TEST ? 0 : wCd(cw); shots++;
   const { best, far } = pickHit(nx, ny);
   const target = best ? (best.wp || best.p) : far;
   if (TEST) { if (best) applyHit(best); return; }
   const dist = ORIGIN.distanceTo(target);
-  flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / 55), hit: best, n: [nx, ny] });
+  flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / 55), hit: best, n: [nx, ny], mult: wRad(cw), pierce: wPierce(cw) });
 }
 function updateFlying(dt) {
   for (let i = flying.length - 1; i >= 0; i--) {
     const f = flying[i]; f.t += dt; const u = Math.min(1, f.t / f.dur);
     proj.visible = true; proj.position.lerpVectors(f.from, f.to, u);
-    if (u >= 1) { let hh = f.hit; if (MOVE && f.n) hh = pickHit(f.n[0], f.n[1]).best; if (hh) applyHit(hh); flying.splice(i, 1); proj.visible = flying.length > 0; }
+    if (u >= 1) { if (f.n) resolveShot(f.n[0], f.n[1], f.mult, f.pierce); else if (f.hit) applyHit(f.hit); flying.splice(i, 1); proj.visible = flying.length > 0; }
   }
 }
 
@@ -470,7 +501,8 @@ function showResult() {
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}/${TOTAL_PROPS}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><p style="opacity:.7;font-size:13px">다음 방문에서는 소품의 종류와 위치가 바뀝니다.</p><button id="again">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}/${TOTAL_PROPS}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="again">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('again').onclick = () => { save.visits[ZONE] = VISIT; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); location.href = u.toString(); };
 }
 
@@ -483,7 +515,8 @@ canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p>화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><button id="go">시작</button>`;
+  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p>화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="shop"></div><button id="go">시작</button>`;
+  { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('go').onclick = () => { ov.style.display = 'none'; started = true; };
 }
 
@@ -533,6 +566,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
-setStatus();
+window.__cb2 = { save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();

@@ -1,0 +1,28 @@
+<!doctype html><body><iframe id=f src="http://localhost:8765/index.html?visit=2" width=1266 height=585></iframe><script>
+const f=document.getElementById('f'); const log=[];
+f.onload=()=>setTimeout(async()=>{
+ const w=f.contentWindow, d=f.contentDocument; const g=w.__cb2;
+ // 1) 강화 구매
+ g.save.coins=500; w.localStorage.clear();
+ const box=d.querySelector('#ov .shop'); const before=[...g.save.wl];
+ // 상점 다시 그리기 위해 버튼 클릭: 현재 DOM의 .up 버튼
+ let ups=d.querySelectorAll('.up'); const c0=g.save.coins;
+ log.push({upButtons:ups.length,coinsBefore:g.save.coins});
+ // coins 반영을 위해 재렌더: 첫 버튼은 이미 disabled일 수 있어 직접 호출
+ d.getElementById('go').click();
+ const adv=(s)=>{for(let k=0;k<s*30;k++)g.sim(1/30)};
+ // 2) 관통: 한 광선에 2개 이상 맞는 점 탐색
+ const rays=[];
+ for(let ix=-.9;ix<=.9;ix+=.02) for(let iy=-.5;iy<=.5;iy+=.02){
+   const h1=g.pickHit(ix,iy).best; if(!h1||h1.kind==='wall') continue;
+   const h2=g.pickHit(ix,iy,h1.t+.25).best; if(h2&&h2.kind!=='wall'&&!(h1.g&&h1.g.gmode==='block')&&h1.e!==(h2&&h2.e)){ if(!rays.some(r=>Math.hypot(r[0]-ix,r[1]-iy)<.25)) rays.push([ix,iy,h1.kind+'>'+h2.kind]); }
+ }
+ log.push({rays:rays.slice(0,3)});
+ const shot=(wi,r)=>{ g.selectWeapon(wi); adv(1.5); const h0=g.hits; g.resolveShot(r[0],r[1],g.WEAPONS[wi].rad,wi===2?2:0); return g.hits-h0; };
+ if(rays.length>=2){ log.push({basicHits:shot(0,rays[0])}); log.push({pierceHits:shot(2,rays[1])}); }
+ // 3) 범위탄 vs 기본탄 소품 제거 복셀 수
+ const e=g.props[0]; const p=new g.cam.position.constructor(e.pos[0],e.pos[1],e.pos[2]);
+ const cnt0=e.count; g.resolveShot(0,0,1,0);
+ document.title='RES'+JSON.stringify(log);
+},1200);
+</script>
