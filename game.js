@@ -200,7 +200,14 @@ function breakProp(e) {
   addCoins(coins * 10, cx.x, cx.y + .4, cx.z);
   if (/barrel|keg/.test(e.name)) explodeAt(cx);
 }
-function explodeAt(cx) {   // 통/술통 폭발: 가까운 수호자 장비에 약한 피해 (방어 효과 없음)
+const shockFx = [];
+function shockwave(cx) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true, opacity: .55, depthWrite: false }));
+  m.position.copy(cx); m.scale.setScalar(.2); sc.add(m); shockFx.push({ m, t: 0 });
+}
+function updateShock(dt) { for (let i = shockFx.length - 1; i >= 0; i--) { const f = shockFx[i]; f.t += dt; const k = Math.min(1, f.t / .45); f.m.scale.setScalar(.2 + k * 2.2); f.m.material.opacity = .55 * (1 - k); if (k >= 1) { sc.remove(f.m); f.m.geometry.dispose(); f.m.material.dispose(); shockFx.splice(i, 1); } } }
+function explodeAt(cx) {
+  shockwave(cx);   // 통/술통 폭발: 가까운 수호자 장비에 약한 피해 (방어 효과 없음)
   burst(cx.x, cx.y, cx.z, 255, 150, 40, 36, 8, .1); burst(cx.x, cx.y, cx.z, 255, 230, 120, 18, 5, .07); shake = Math.max(shake, .25); sfx('block');
   let hit = 0;
   for (const g of GS) {
@@ -693,7 +700,7 @@ if (!TEST) {
 let last = performance.now();
 const shakeBase = cam.position.clone();
 function update(dt) {
-  if (chainT > 0) chainT -= dt;
+  if (chainT > 0) chainT -= dt; updateShock(dt);
   if (cooldown > 0) cooldown -= dt;
   if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = MAG[reloadW].n; } }
   updBar();
