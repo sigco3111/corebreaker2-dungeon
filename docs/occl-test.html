@@ -1,13 +1,23 @@
 <!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
 const Z=location.hash.slice(1)||1;const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+Z;
-setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res={n:0,ringKnight:0,ringProp:0,ringOther:0,propInFrontButAssist:0,propInFrontKept:0};
-for(const g of C.GS){g.gmode='open';g.bob=0;for(const c of Object.keys(g.PARTS)){const m=g.marks[c];
- for(let off=-3.5;off<=3.5;off+=.05){g.off=off;const p=C.projectPoint(m.x+off,m.y+.04,m.z+.25);if(Math.abs(p[0])>1||Math.abs(p[1])>1)continue;
-  const b=C.pickHit(p[0],p[1]).best;res.n++;
-  // is a prop actually in front of the ring along this ray? ask pickHit with assist disabled by moving marker flag
-  const mk=g.PARTS[c];const alive=mk.alive;mk.alive=false;const b0=C.pickHit(p[0],p[1]).best;mk.alive=alive;
-  const propFront=b0&&b0.kind==='prop';
-  if(propFront){if(b&&b.kind==='prop')res.propInFrontKept++;else res.propInFrontButAssist++;}
-  if(b){if(b.kind==='knight'&&b.g===g)res.ringKnight++;else if(b.kind==='prop')res.ringProp++;else res.ringOther++;}
- }g.off=g.slot.x;}}
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const T=C.THREE;const res={blockedByProp:0,assistThroughProp:0,noProp_assist:0,noProp_total:0,wallOut_assist:0,wallOut_wall:0,wallOut_total:0,deadPartAssist:0,deadPartTotal:0};
+function slab(cx,cy,cz){const pt=.2,pos=[];for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++)for(let k=0;k<2;k++)pos.push(cx+i*pt,cy+j*pt,cz+k*pt);const n=pos.length/3,P=new Float32Array(pos),grid=new Map(),bb=new T.Box3();
+ for(let i=0;i<n;i++){const k=C.key(Math.floor(P[i*3]/pt),Math.floor(P[i*3+1]/pt),Math.floor(P[i*3+2]/pt));(grid.get(k)||grid.set(k,[]).get(k)).push(i);bb.expandByPoint(new T.Vector3(P[i*3],P[i*3+1],P[i*3+2]));}
+ bb.expandByScalar(pt);const e={name:'testslab',mesh:{setMatrixAt(){},instanceMatrix:{}},pos:P,n,pt,grid,bb,alive:new Uint8Array(n).fill(1),count:n,total:n,v:[],dead:false};return e;}
+const camp=new T.Vector3(.8,1.6,10.4);
+for(const g of C.GS){g.gmode='open';g.bob=0;g.off=g.slot.x;for(const c of Object.keys(g.PARTS)){const m=g.marks[c];
+ const ring=new T.Vector3(m.x+g.off,m.y+.04,m.z+.25);const p=C.projectPoint(ring.x,ring.y,ring.z);
+ // control: no prop
+ let b=C.pickHit(p[0],p[1]).best;res.noProp_total++;if(b&&b.kind==='knight'&&b.g===g)res.noProp_assist++;
+ // slab at 55% of distance between camera and ring
+ const sp=camp.clone().lerp(ring,.55);const e=slab(sp.x,sp.y,sp.z);C.props.push(e);
+ b=C.pickHit(p[0],p[1]).best;if(b&&b.kind==='prop')res.blockedByProp++;else res.assistThroughProp++;
+ C.props.pop();
+ // wall-out: guardian moved outside the side wall, aim at its ring
+ const keep=g.off;g.off=keep>0?7.2:-7.2;const p2=C.projectPoint(m.x+g.off,m.y+.04,m.z+.25);
+ if(Math.abs(p2[0])<=1&&Math.abs(p2[1])<=1){res.wallOut_total++;b=C.pickHit(p2[0],p2[1]).best;if(b&&b.kind==='knight'&&b.g===g)res.wallOut_assist++;else if(b&&b.kind==='wall')res.wallOut_wall++;}
+ g.off=keep;
+ // dead part: no assist
+ const pr=g.PARTS[c];const al=pr.alive;pr.alive=false;res.deadPartTotal++;b=C.pickHit(p[0],p[1]).best;if(b&&b.assist)res.deadPartAssist++;pr.alive=al;
+}}
 document.title='done:'+JSON.stringify(res);},3000);</script>

@@ -499,7 +499,7 @@ function pickHit(nx, ny, t0 = 0) {
     if (g.kstate === 'guard' && g.marks) for (const c in g.marks) {   // 표식(노란 고리)을 겨누면 그 부위가 맞는다: 조준 보조
       const m = g.marks[c]; if (!(g.PARTS[c] && g.PARTS[c].alive)) continue;
       const msp = new THREE.Sphere(new THREE.Vector3(m.x + g.off, m.y + .04 + gb, m.z + .25), .25 * Math.max(.9, g.rel)); const mp = ray.intersectSphere(msp, new THREE.Vector3()); if (!mp) continue;
-      const mt = mp.distanceTo(ray.origin); if (best && best.kind === 'prop' && best.t < mt - .3) continue;
+      const mt = mp.distanceTo(ray.origin); if (best && (best.kind === 'prop' || best.kind === 'wall') && best.t < mt - .3) continue;
       let bi = -1, bd = 1e9; const K = g.K; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { const dx = K.pos[i * 3] - m.x, dy = K.pos[i * 3 + 1] - m.y, dz = K.pos[i * 3 + 2] - m.z, d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
       if (bi < 0) continue; if (best && best.kind === 'knight' && best.g === g && K.cat[best.i] == c) continue;
       const lp = new THREE.Vector3(K.pos[bi * 3], K.pos[bi * 3 + 1], K.pos[bi * 3 + 2]);
@@ -784,6 +784,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
