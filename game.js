@@ -598,12 +598,12 @@ function applyHit(h) {
 }
 // 폭발탄: 착탄 지점 주변 소품을 한꺼번에 부수고, 수호자 장비에는 약한 피해(방어 중이면 제외)
 function blast(p) {
-  const R = (1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0)) * (SUPA.blast ? 1.25 : 1) * (modOf(3).br || 1);
+  const R = (1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0)) * (SUPA.blast ? 1.25 : 1) * (modOf(3).br || 1) * msMul(3);
   shockwave(p); burst(p.x, p.y, p.z, 255, 150, 40, 24, 7, .09); shake = Math.max(shake, .2); sfx('block');
   for (const e of props.slice()) { if (e.dead) continue; const c = e.bb.clone().expandByScalar(R); if (!c.containsPoint(p)) continue; damageProp(e, p, R * .75); }
   for (const g of GS) { if (g.kstate !== 'guard' || g.gmode === 'block') continue; const K = g.K, gb = g.bob || 0; let bi = -1, bd = R * R;
     for (let i = 0; i < K.n; i++) { if (!K.alive[i]) continue; const c = K.cat[i]; if (!g.PARTS[c] || !g.PARTS[c].alive) continue; const dx = K.pos[i * 3] + g.off - p.x, dy = K.pos[i * 3 + 1] + gb - p.y, dz = K.pos[i * 3 + 2] - p.z; const d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
-    if (bi >= 0) { const c = K.cat[bi], pt = g.PARTS[c]; pt.hp -= .5; if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c); } }
+    if (bi >= 0) { const c = K.cat[bi], pt = g.PARTS[c]; pt.hp -= .5 * msMul(3); if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c); } }
 }
 // 연쇄탄(체인 라이트닝): 명중 지점에서 가장 가까운 대상으로 번개가 차례로 이어진다(소품, 수호자 장비). 산탄이 근거리 넓은 탄막이라면 연쇄탄은 방 전체로 이어지는 단일 줄기.
 const bolts = [];
@@ -628,8 +628,8 @@ function chainProps(h) {
     let best = null, bd = RNG; for (const t of cand) { if (used.has(t) || (t.k === 'prop' && used.has(t.e))) continue; const d = t.pos.distanceTo(cur); if (d < bd) { bd = d; best = t; } }
     if (!best) break; used.add(best); boltLine(cur, best.pos); cur = best.pos.clone();
     burst(cur.x, cur.y, cur.z, 200, 180, 255, 10, 4, .05);
-    if (best.k === 'prop') { const e = best.e; const i = lookupVoxel(e, cur, 2); const pp = i >= 0 ? new THREE.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]) : cur; damageProp(e, pp, .4); }
-    else { const pt = best.g.PARTS[best.c]; if (pt && pt.alive) { pt.hp -= .5; if (pt.hp <= 0) breakPart(best.g, best.c); else relocateMark(best.g, best.c); } }
+    if (best.k === 'prop') { const e = best.e; const i = lookupVoxel(e, cur, 2); const pp = i >= 0 ? new THREE.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]) : cur; damageProp(e, pp, .4 * msMul(4)); }
+    else { const pt = best.g.PARTS[best.c]; if (pt && pt.alive) { pt.hp -= .5 * msMul(4); if (pt.hp <= 0) breakPart(best.g, best.c); else relocateMark(best.g, best.c); } }
   }
 }
 
@@ -644,6 +644,7 @@ const WEAPONS = [
 const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 +2', 'Lv7 게이지 획득 +25% · Lv8 탄창 +1', 'Lv7 폭발 반경 +15% · Lv10 탄창 +1', 'Lv7 번개 +2회 · Lv10 탄창 +2'];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
+const MSDESC = ['직접 피해 +3%', '파편 피해 +3%', '관통 피해 +3%', '폭발 반경·장비 피해 +3%', '번개 피해 +3%'];
 const msCost = w => { const r = save.ms[w] || 0; return Math.round(300 * Math.pow(1.28, r) / 10) * 10; }, msMul = w => 1 + .03 * (save.ms[w] || 0), MSMAX = 30;
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
 const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1)) * (modOf(w).cd || 1);
@@ -688,7 +689,7 @@ window.addEventListener('keydown', e => {
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd pk" style="opacity:.7">${PERKS[i]}</div>` + modHTML(i) + (L >= LVMAX ? `<button class="ms" data-w="${i}" ${save.coins >= msCost(i) && (save.ms[i] || 0) < MSMAX ? '' : 'disabled'}>각인 ${save.ms[i] || 0}단 · ${msCost(i)} (피해 +3%)</button>` : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${(save.sup[x.id] || 0) >= SUP_MAX || save.coins < x.p ? 'disabled' : ''}>${x.n} · ${x.e} · ${x.p}${save.sup[x.id] ? ' (보유 ' + save.sup[x.id] + ')' : ''}</button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button> <button class="pkbtn recbtn2">강화 효과</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd pk" style="opacity:.7">${PERKS[i]}</div>` + modHTML(i) + (L >= LVMAX ? `<button class="ms" data-w="${i}" ${save.coins >= msCost(i) && (save.ms[i] || 0) < MSMAX ? '' : 'disabled'}>각인 ${save.ms[i] || 0}단 · ${msCost(i)} (${MSDESC[i]})</button>` : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${(save.sup[x.id] || 0) >= SUP_MAX || save.coins < x.p ? 'disabled' : ''}>${x.n} · ${x.e} · ${x.p}${save.sup[x.id] ? ' (보유 ' + save.sup[x.id] + ')' : ''}</button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button> <button class="pkbtn recbtn2">강화 효과</button><div class="recwrap"></div>`;
 }
 function modHTML(w) { const cur = save.md[w] || 0; return '<div class="mods">' + MODS[w].map((m, k) => { const own = save.mu[w + ':' + (k + 1)], on = cur === k + 1; return `<button class="md${on ? ' on' : ''}" data-w="${w}" data-k="${k + 1}" title="${m.e}" ${(!own && save.coins < m.p) ? 'disabled' : ''}>${m.n}${on ? ' ✔' : own ? '' : ' ' + m.p}</button>`; }).join('') + `</div><div class="cd${cur ? '' : ' mh'}" style="opacity:.75">${cur ? MODS[w][cur - 1].n + ': ' + MODS[w][cur - 1].e : '개조 선택(다시 누르면 해제)'}</div>`; }
 const LEDN = [['up', '강화'], ['unl', '해금'], ['mod', '개조'], ['ms', '각인'], ['sup', '보급']];
@@ -910,6 +911,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { bolts, frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { blast, chainProps, bolts, frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();

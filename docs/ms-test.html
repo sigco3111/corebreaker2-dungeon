@@ -1,0 +1,14 @@
+<!doctype html><body><script>
+localStorage.setItem('cb2.save.v1', JSON.stringify({wu:[1,1,1,1,1]}));
+const f=document.createElement('iframe');f.width=1266;f.height=585;f.src='../index.html?visit=2&zone=2&mode=classic';document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{try{const d=f.contentDocument,C=f.contentWindow.__cb2,T=C.THREE;d.getElementById('go').click();
+const out=[];
+const g=C.GS.find(g=>g.kstate==='guard');
+const parts=()=>Object.fromEntries(Object.keys(g.PARTS).map(c=>[c,g.PARTS[c].hp]));
+const mk=Object.keys(g.marks)[0];const m=g.marks[mk];const P=new T.Vector3(m.x+g.off,m.y+(g.bob||0),m.z);
+const hp=()=>g.PARTS[mk].hp;
+for(const [w,fn] of [[3,()=>C.blast(P.clone())],[4,()=>C.chainProps({p:P.clone().add(new T.Vector3(0,0,1.5)),e:null})]]){
+ for(const rank of [0,20]){C.save.ms[w]=rank;g.gmode='open';g.kstate='guard';g.PARTS[mk].hp=100;g.PARTS[mk].alive=true;const h0=hp();fn();out.push({w,rank,dHp:+(h0-hp()).toFixed(3)});}
+}
+document.title='RES'+JSON.stringify(out);}catch(e){document.title='ERR'+e.message+(e.stack||'').slice(0,300)}},3000);
+</script>
