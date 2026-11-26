@@ -1,0 +1,8 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const Z=+(location.hash.slice(1)||1);const f=document.getElementById('f');f.src='../index.html?visit=1&zone='+Z;
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;C.selectWeapon(0);
+const c0=C.totalCoinsNow;C.addCoins(20,0,1,-7);const dc=C.totalCoinsNow-c0;
+C.update(1);for(let i=0;i<12;i++){C.update(.3);C.fire(0,-.3);}
+const rl=C.reloadT;
+const g0=C.gauge;C.ammo[2]=0;C.gaugeUp({kind:'knight',g:{},pshot:false});
+document.title='zone'+Z+' rule='+JSON.stringify(C.ZR)+' dspeed='+C.DSPEED.toFixed(3)+' coin20->'+dc+' reload='+rl.toFixed(2)+' gaugeGain='+(C.gauge-g0).toFixed(1);},1500);</script>

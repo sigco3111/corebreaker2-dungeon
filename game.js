@@ -27,7 +27,7 @@ const ZRULES = [
   { t: '장전이 빠르다', rl: .8 }, { t: '코인 +50%, 수호자 약간 빠름', coin: 1.5, spd: 1.1 },
   { t: '게이지가 빨리 찬다', gg: 1.6 }, { t: '수호자가 빠르다', spd: 1.25 },
   { t: '방어 시간이 짧다, 수호자 약간 빠름', blk: .8, spd: 1.1 }, { t: '장전 느림, 게이지 빠름', rl: 1.3, gg: 1.3 },
-  { t: '코인 +30%, 방어 시간 김', coin: 1.3, blk: 1.15 }, { t: '수호자 빠름, 방어 짧음, 장전 약간 빠름', spd: 1.15, blk: .85, rl: .9 }];
+  { t: '코인 +30%, 게이지 약간 빨리 참', coin: 1.3, gg: 1.2 }, { t: '수호자 빠름, 방어 짧음, 장전 약간 빠름', spd: 1.15, blk: .85, rl: .9 }];
 const ZR = ZRULES[(ZONE - 1) % 8];
 let s = ZONE * 7919 + VISIT * 104729 + 13;
 const R = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
@@ -707,6 +707,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+window.__cb2 = { ZR, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
