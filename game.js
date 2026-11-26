@@ -207,7 +207,7 @@ const GTYPES = {
   knight: { go: 1, gb: 1, name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   barbarian: { go: 1.2, gb: 0.8, name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { go: 1, gb: 1, name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  rogue: { go: 1, gb: 0.7, hs: .95, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
+  rogue: { go: 1, gb: 0.7, hs: .9, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
   skelwar: { go: 1, gb: 1, hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   skelmage: { go: 1, gb: 1, name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
   skelrogue: { go: 1, gb: 0.7, hs: .86, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
