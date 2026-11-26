@@ -316,6 +316,7 @@ function makeGuardian(typeKey, slot, idx) {
   if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
   keys.forEach((k, i) => GS.push(makeGuardian(k, slots[i], i)));
+  if (ZONE % 8 === 0) { const eg = GS[1]; eg.elite = true; eg.name = '★정예 ' + eg.name; }   // 마지막 구역: 가운데 수호자는 정예(보상만 3배, 방어 변화 없음)
 }
 let KOFF = 0;   // (호환용) 사용 안 함
 const MOVE = !TEST || q.get('move') === '1';
@@ -613,7 +614,7 @@ function collapse(g) {
     const sp = (1 + Math.random() * 3) * Math.max(.6, g.rel); kv[i * 3] = dx / l * sp; kv[i * 3 + 1] = dy / l * sp * .5 + .3 + Math.random() * 1.8; kv[i * 3 + 2] = dz / l * sp * .8;
   }
   burst(CORE.x + g.off, CORE.y, CORE.z, 120, 240, 255, 60, 12, .09); shake = .7;
-  addCoins(100, g.off, g.slot.H * 1.2, g.slot.z);
+  addCoins(g.elite ? 300 : 100, g.off, g.slot.H * 1.2, g.slot.z);
 }
 function updateCollapse(g, dt) {
   const { K, kv, kpt } = g; g.collapseT += dt; const collapseT = g.collapseT;
@@ -690,7 +691,7 @@ canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}${({ 2: ' · 중장갑 구역', 3: ' · 해골 구역', 6: ' · 해골 구역', 5: ' · 민첩 구역', 7: ' · 민첩 구역' })[ZONE] || ''}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
+  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}${({ 2: ' · 중장갑 구역', 3: ' · 해골 구역', 6: ' · 해골 구역', 5: ' · 민첩 구역', 7: ' · 민첩 구역', 8: ' · 가운데 ★정예(처치 보상 3배)' })[ZONE] || ''}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
   ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('go').onclick = () => { ov.style.display = 'none'; started = true; };
@@ -745,6 +746,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { ZR, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
