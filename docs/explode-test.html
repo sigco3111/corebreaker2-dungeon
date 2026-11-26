@@ -1,0 +1,9 @@
+<!doctype html><title>run</title><iframe id=f width=800 height=450></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&zone=1&g=knight,barbarian,mage';
+setTimeout(()=>{const C=f.contentWindow.__cb2;const hp=()=>C.GS.map(g=>Object.values(g.PARTS).map(p=>p.hp).join('/')).join(' | ');
+const out=['hp0 '+hp()];const v=C.cam.position.clone();
+const g=C.GS[1];v.set(g.off+0.3,g.slot.H*.5,g.slot.z);out.push('near hits '+C.explodeAt(v)+' hp '+hp());
+v.set(0,0,3);out.push('far(z3) hits '+C.explodeAt(v)+' hp '+hp());
+const names=C.props.map(p=>p.name).filter(n=>/barrel|keg/.test(n));out.push('barrels '+names.length);
+document.title='done:'+out.join(' ; ');},3500);
+</script>
