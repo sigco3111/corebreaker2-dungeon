@@ -1,0 +1,8 @@
+<!doctype html><body style="margin:0;overflow:hidden"><script>
+const q=new URLSearchParams(location.search);
+if(q.get('fresh')){localStorage.removeItem('cb2.save.v1');}
+else localStorage.setItem('cb2.save.v1', JSON.stringify({coins:50,plays:1,clears:1,zone:2,unlocked:[2,3,4],visits:{2:1},wl:[1,1,1],dex:{},hist:[]}));
+const f=document.createElement('iframe'); f.width=q.get('w')||1266; f.height=q.get('h')||585; f.style.border=0; f.src='http://localhost:8765/index.html'; document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{const d=f.contentDocument; const bs=[...d.querySelectorAll('.zb')]; d.title; document.title='RES'+bs.map(b=>b.innerText+(b.disabled?'(x)':'')).join(',');
+ if(q.get('click')){ bs[2].click(); } },1200);
+</script>

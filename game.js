@@ -3,12 +3,14 @@ const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 const STAGE = +(q.get('stage') || 0);        // 테스트용: 스크립트 진행 단계
 const TEST = STAGE !== 0;
-const ZONE = +(q.get('zone') || 2);
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {}, shots: 0, hits: 0, hist: [] });
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
 function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
+if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
+const ZONE = +(q.get('zone') || save.zone || 2);
+const nextZone = z => z % 8 + 1;
 const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
 
 const THEMES = [
@@ -505,13 +507,14 @@ function updateGuardian(g, dt) {
 }
 const t0 = performance.now(); let elapsed = 0;
 function showResult() {
-  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; save.shots += shots; save.hits += hitsLanded; save.hist.push({ v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
+  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
   const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed);
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}/${TOTAL_PROPS}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="again">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}/${TOTAL_PROPS}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
+  $('nextz').onclick = () => { save.zone = nextZone(ZONE); writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); };
   $('again').onclick = () => { save.visits[ZONE] = VISIT; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); location.href = u.toString(); };
 }
 
@@ -524,7 +527,8 @@ canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p>화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="shop"></div><button id="go">시작</button>`;
+  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
+  ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('go').onclick = () => { ov.style.display = 'none'; started = true; };
 }
