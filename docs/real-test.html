@@ -1,0 +1,26 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const H=location.hash.slice(1).split('&');const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(H[0]||1);
+const LAG=+(H[1]||0)/1000;const STOP=+(H[2]||0);
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const THREE_=null;
+const st={shots:0,onPart:0,body:0,wall:0,prop:0,other:0,core:0,block:0,t:0};const hist=[];
+const pos=(g,c)=>{const m=g.marks[c];return [m.x+g.off,m.y+.04+(g.bob||0),m.z+.25];};
+for(let step=0;step<30*120;step++){
+  C.update(1/30);st.t+=1/30;
+  if(GSdone(C)||(STOP&&st.shots>=STOP))break;
+  // lag: use ring screen position from LAG seconds ago
+  const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');if(!g)continue;
+  let aim=null;
+  if(g.kstate==='exposed'){const p=g.CORE;aim=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}
+  else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c){const p=pos(g,c);aim=C.projectPoint(p[0],p[1],p[2]);}}
+  hist.push(aim);const use=hist[Math.max(0,hist.length-1-Math.round(LAG*30))]||aim;
+  if(!use||g.gmode==='block')continue;
+  const n0=C.flying.length,s0=C.cw;
+  const before=C.hits;const sh0=st.shots;
+  C.fire(use[0],use[1]);
+  if(C.flying.length>n0){st.shots++;const fl=C.flying[C.flying.length-1];const h=fl.hits&&fl.hits[0]||fl.hit;
+    if(!h)st.other++;else if(h.kind==='wall')st.wall++;else if(h.kind==='prop')st.prop++;else if(h.kind==='core')st.core++;
+    else if(h.kind==='knight'){const gg=h.g;const cc=gg.K.cat[h.i];if(gg.PARTS[cc]&&gg.PARTS[cc].alive)st.onPart++;else st.body++;}}
+}
+function GSdone(C){return C.GS.every(g=>g.kstate==='collapse'||g.kstate==='done');}
+st.state=C.GS.map(g=>g.name+':'+g.kstate+':'+Object.values(g.PARTS).filter(p=>p.alive).length).join(',');
+document.title='done:'+JSON.stringify(st);},3000);</script>
