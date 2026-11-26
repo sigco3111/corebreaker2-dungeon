@@ -468,14 +468,15 @@ for (let k = 0, t = 0; k < cnt && t < 400; t++) {
 }
 { const LOW = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small'];
   for (let k = 0, t = 0; k < 4 && t < 100; t++) { const x = (R() * 2 - 1) * 5, z = -2.4 - R() * 2.0; if (Math.abs(x) < 2.4) continue; const nm = LOW[Math.floor(R() * LOW.length)]; const d = P[nm]; if (!d) continue; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * .6; if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue; placed.push([x, z, rad]); put(nm, x, z, 1.0, Math.floor(R() * 4) * Math.PI / 2, 0, true); k++; } }
-if (SUMMON) {   // 대량 배치: 소품을 훨씬 많이(겹침만 피함). 아래 안전망이 수호자를 가리는 것은 제거
+if (SUMMON) {   // 대량 배치 (수호자 자리는 비어 있으므로 소환 전에는 중앙에도 놓고, 소환 때 가리는 것만 정리)
+  const placed2 = placed.slice(4);   // 소품을 훨씬 많이(겹침만 피함). 아래 안전망이 수호자를 가리는 것은 제거
   const lowN = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small', 'bottle_B_brown'];
-  for (let k = 0, t = 0; k < 42 && t < 1200; t++) {
+  for (let k = 0, t = 0; k < 54 && t < 1800; t++) {
     const x = (R() * 2 - 1) * 6.0, z = -2.6 - R() * 6.8;
     const pool = R() < .55 ? lowN : T.p; const nm = pool[Math.floor(R() * pool.length)]; const d = P[nm]; if (!d) continue;
     const sz_ = 0.7 + R() * .35; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * sz_ * .5;
-    if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue;
-    placed.push([x, z, rad]); put(nm, x, z, sz_, Math.floor(R() * 4) * Math.PI / 2 + (R() - .5) * .4, 0, true); k++;
+    if (placed2.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue;
+    placed2.push([x, z, rad]); put(nm, x, z, sz_, Math.floor(R() * 4) * Math.PI / 2 + (R() - .5) * .4, 0, true); k++;
   }
 }
 // 안전망: 수호자의 이동 범위 안에서 장비/코어를 가리는 소품은 제거(조준 시야 확보)
@@ -578,10 +579,11 @@ const WEAPONS = [
   { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 방패 장비에 1.5배, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff }];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
-const wCd = w => WEAPONS[w].cd * (1 - .06 * (wLvl(w) - 1));
-const wRad = w => WEAPONS[w].rad * (1 + .1 * (wLvl(w) - 1));
-const wPierce = w => w === 2 ? 2 + (wLvl(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
-const upCost = w => 30 * wLvl(w);
+const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
+const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1));
+const wRad = w => WEAPONS[w].rad * (1 + .1 * (effLv(w) - 1));
+const wPierce = w => w === 2 ? 2 + Math.floor(effLv(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
+const upCost = w => { const L = wLvl(w); return L < 5 ? 30 * L : Math.round(25 * Math.pow(L, 1.5) / 5) * 5; };
 function collectShot(nx, ny, mult, pierce, pshot, dmg) {   // 발사 순간에 조준점 기준으로 맞는 대상을 확정(표적 태그와 일치)
   const hits = []; let t0 = 0;
   for (let k = 0; k <= pierce; k++) {
@@ -620,7 +622,7 @@ window.addEventListener('keydown', e => {
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/5</span></div><div class="cd">${W.d}</div>` + (L >= 5 ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
@@ -628,7 +630,7 @@ function recHTML() {
   return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
-function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < 5) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
+function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
@@ -815,6 +817,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
