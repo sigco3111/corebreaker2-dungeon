@@ -1,12 +1,12 @@
 <!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
-const M=location.hash.slice(1)||'open';const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage&w='+(M=='pierce'?2:0);
-setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;if(M=='off')w.__noHL=true;d.getElementById('go').click();const C=w.__cb2;const g=C.GS[1];
+const M=location.hash.slice(1)||'open';const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage&w='+(M.includes('pierce')?2:0);
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;if(location.hash.includes('off'))w.__noHL=true;d.getElementById('go').click();const C=w.__cb2;const gi=+((location.hash.match(/g(\d)/)||[0,1])[1]),pn=(location.hash.match(/p(\d)/)||[0,-1])[1];const g=C.GS[gi];
 const cv=d.querySelector('canvas');const stats={n:0,match:0,tagged:0};
-const key=Object.keys(g.PARTS).find(c=>g.marks[c]);
-setInterval(()=>{if(M=='pierce'){g.gmode='block';g.gT=0;}
+const ks=Object.keys(g.PARTS).filter(c=>g.marks[c]);const key=pn>=0?ks[+pn]:ks[0];stats.names=ks.map(c=>g.PARTS[c].name).join(',');
+setInterval(()=>{if(M.includes('pierce')){g.gmode='block';g.gT=0;}
  const m=g.marks[key];const v=new w.THREE_V(m.x+g.off,m.y,m.z+.25);},1e9);
-const iv=setInterval(()=>{const m=g.marks[key];if(!m)return;if(M=='pierce'){g.gmode='block';g.gT=0;}
+const iv=setInterval(()=>{const m=g.marks[key];if(!m)return;if(M.includes('pierce')){g.gmode='block';g.gT=0;}
  const p=C.projectPoint(m.x+g.off,m.y,m.z+.25);const r=cv.getBoundingClientRect();
  cv.dispatchEvent(new w.PointerEvent('pointermove',{clientX:r.left+(p[0]*.5+.5)*r.width,clientY:r.top+(-p[1]*.5+.5)*r.height,bubbles:true}));
  stats.n++;const a=C.aimInfo(p[0],p[1]);if(a){stats.tagged++;}},120);
-setTimeout(()=>{document.title='n='+stats.n+' tagged='+stats.tagged+' tag='+d.getElementById('cross').textContent;},2600);},2500);</script>
+setTimeout(()=>{document.title=stats.names+' n='+stats.n+' tagged='+stats.tagged+' tag='+d.getElementById('cross').textContent;},2600);},2500);</script>
