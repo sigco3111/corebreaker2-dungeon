@@ -1,0 +1,7 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage';
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res=[];
+for(const [gi,cat,w] of [[2,1,'mage hat'],[0,1,'knight helmet'],[0,4,'knight shield']]){const g=C.GS[gi];g.gmode='open';
+ let p=null;for(let x=-1;x<=1&&!p;x+=.006)for(let y=-.6;y<=.6;y+=.006){const h=C.pickHit(x,y).best;if(h&&h.kind=='knight'&&h.g===g&&g.K.cat[h.i]==cat){p=[x,y];break;}}
+ const h0=g.PARTS[cat].hp;if(p){C.resolveShot(p[0],p[1],.62,0,false,.5);res.push(w+' '+h0+' -> '+g.PARTS[cat].hp);}else res.push(w+' no aim');}
+document.title='done:'+res.join(' ; ');},3000);</script>

@@ -373,7 +373,7 @@ function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1) * (h.pshot && pt.name === '방패' ? 1.5 : 1);   // 관통탄은 방패 부위에 1.5배 피해 if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
+    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1) * (h.pshot && pt.name === '방패' ? 1.5 : 1) * (h.sg && /모자|두건|지팡이|석궁/.test(pt.name) ? 1.6 : 1);   // 산탄은 천/나무 장비에 1.6배   // 관통탄은 방패 부위에 1.5배 피해 if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
     let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
@@ -505,7 +505,7 @@ const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
 // ---------- 무기 3종 (기본탄 / 범위탄 / 관통탄), 각 5단계 강화 ----------
 const WEAPONS = [
   { n: '기본탄', d: '12발 연사, 소진 시 장전', cd: .22, rad: 1, pierce: 0, col: 0xffd54a },
-  { n: '산탄', d: '약한 파편 9발이 넓게 퍼짐·근거리 강함, 6발 소진 시 장전', cd: .6, rad: 1.0, pierce: 0, col: 0xff7a4a },
+  { n: '산탄', d: '약한 파편 9발이 넓게 퍼짐·근거리 강함, 모자·지팡이·석궁에 1.6배, 6발 소진 시 장전', cd: .6, rad: 1.0, pierce: 0, col: 0xff7a4a },
   { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 방패 장비에 1.5배, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff }];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
@@ -516,7 +516,7 @@ const upCost = w => 30 * wLvl(w);
 function collectShot(nx, ny, mult, pierce, pshot, dmg) {   // 발사 순간에 조준점 기준으로 맞는 대상을 확정(표적 태그와 일치)
   const hits = []; let t0 = 0;
   for (let k = 0; k <= pierce; k++) {
-    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; h.dmg = dmg || 1; if (pshot) h.pshot = true; hits.push(h);
+    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; h.dmg = dmg || 1; if (dmg === .5) h.sg = true; if (pshot) h.pshot = true; hits.push(h);
     const blocked = (h.kind === 'knight' || h.kind === 'core') && h.g.gmode === 'block' && !pshot;
     if (blocked || h.kind === 'wall' || h.kind === 'core') break;
     t0 += h.t + .25;
