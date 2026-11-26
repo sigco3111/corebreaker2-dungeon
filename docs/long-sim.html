@@ -1,0 +1,28 @@
+<!doctype html><body><script>
+const KEY='cb2.save.v1',N=+(location.hash.slice(1)||30),ZS=[2,3,4,5,6,7,8,1],res=[];
+let OFF=0;
+const up=L=>L<5?30*L:Math.round(25*Math.pow(L,1.5)/5)*5, ms=r=>Math.round(300*Math.pow(1.28,r)/10)*10;
+function policy(sv,log){ // 기본탄만 투자하는 플레이어: 강화 -> 각인, 남는 코인은 소환가속 보급
+ for(let k=0;k<60;k++){ let did=false;
+  if(sv.wl[0]<10&&sv.coins>=up(sv.wl[0])){const c=up(sv.wl[0]);sv.coins-=c;sv.wl[0]++;sv.led.up=(sv.led.up||0)+c;log.up=(log.up||0)+c;did=true;}
+  else if(sv.wl[0]>=10&&(sv.ms[0]||0)<30&&sv.coins>=ms(sv.ms[0]||0)&&sv.coins-ms(sv.ms[0]||0)>=0&&(sv.sup.sg||0)>=1){const c=ms(sv.ms[0]||0);sv.coins-=c;sv.ms[0]++;sv.led.ms=(sv.led.ms||0)+c;log.ms=(log.ms||0)+c;did=true;}
+  else if((sv.sup.sg||0)<3&&sv.coins>=140&&sv.wl[0]>=4){sv.coins-=140;sv.sup.sg=(sv.sup.sg||0)+1;sv.led.sup=(sv.led.sup||0)+140;log.sup=(log.sup||0)+140;did=true;}
+  if(!did)break;}
+ sv.eq=(sv.sup.sg>0)?{sg:1}:{};
+}
+function runOne(i){return new Promise(done=>{
+ const z=ZS[(OFF+i)%8]; const f=document.createElement('iframe');f.width=1266;f.height=585;f.style.border=0;f.src='../index.html?zone='+z+'&mode=summon&r='+Math.random();document.body.appendChild(f);
+ f.onload=()=>setTimeout(()=>{const d=f.contentDocument,C=f.contentWindow.__cb2,T=C.THREE;d.getElementById('go').click();
+  const used=Object.keys(JSON.parse(localStorage.getItem(KEY)).eq||{}).length>0;
+  const proj=p=>p.clone().project(C.cam);
+  function aimProp(){for(const e of C.props){if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return [v.x,v.y];}}return null;}
+  const ring=(g,c)=>{const m=g.marks[c];return C.projectPoint(m.x+g.off,m.y+.04+(g.bob||0),m.z+.25);};
+  let t=0;for(let s=0;s<30*400;s++){C.update(1/30);t+=1/30;if(C.GS.every(g=>g.kstate==='done'))break;
+   if(!C.sg[2]){const a=(s%5===0)?aimProp():null;if(a)C.fire(a[0],a[1]);}
+   else{const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');if(!g||g.gmode==='block')continue;let a=null;if(g.kstate==='exposed'){const p=g.CORE;a=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c)a=ring(g,c);}if(a)C.fire(a[0],a[1]);}}
+  const inc=C.coins; const sv0=JSON.parse(localStorage.getItem(KEY));
+  f.remove(); done({i,z,used,inc,el:+C.elapsed.toFixed(1),balAfterRun:sv0.coins});},1200);});}
+(async()=>{try{const st=await fetch('state.json').then(r=>r.ok?r.json():null).catch(()=>null);if(st){localStorage.setItem(KEY,JSON.stringify(st.save));OFF=st.off;}else localStorage.setItem(KEY,JSON.stringify({wu:[1,0,0,0,0]}));
+for(let i=0;i<N;i++){const r=await runOne(i);const sv=JSON.parse(localStorage.getItem(KEY));const log={};policy(sv,log);localStorage.setItem(KEY,JSON.stringify(sv));r.spent=log;r.bal=sv.coins;r.wl=sv.wl[0];r.ms=sv.ms[0];r.sup=sv.sup.sg||0;res.push(r);document.title='PROG'+i;}
+ document.title='RES'+JSON.stringify({off:OFF+N,save:JSON.parse(localStorage.getItem(KEY)),res});}catch(e){document.title='ERR'+e.message+JSON.stringify(res)}})();
+</script>

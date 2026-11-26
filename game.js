@@ -425,6 +425,7 @@ function hitKnight(h) {
       if (dx * dx + dy * dy + dz * dz < cr * cr) { K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO); if ((k++ % 2) == 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 5, Math.random() * 4 + 1, Math.random() * 5, g.kpt, 0); }
     }
     K.mesh.instanceMatrix.needsUpdate = true; shake = .15;
+    if (pt.hp > 0) { let left = 0; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { left = 1; break; } if (!left) pt.hp = 0; }   // 부위의 복셀이 모두 깎였는데 체력이 남아 맞힐 곳이 없어지는 막힘 방지
     if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c);
   } else {
     burst(h.wp.x, h.wp.y, h.wp.z, 200, 200, 210, 6, 4, .05);   // 몸통은 코어 전까지 깎이지 않음
