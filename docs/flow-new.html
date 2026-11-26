@@ -1,5 +1,5 @@
-<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
-const H=location.hash.slice(1).split('&');const WP=+(H[1]||0);const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(H[0]||1)+'&mode=summon';
+<!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const H=location.hash.slice(1).split('&');const WP=+(H[1]||0);const f=document.getElementById('f');if(H[2]){const [w,h]=H[2].split('x');f.width=w;f.height=h;}f.src='../index.html?visit=3&zone='+(H[0]||1)+'&mode=summon';
 setTimeout(()=>{try{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const T=C.THREE;
 C.eco&&0;C.save.wu=[1,1,1,1,1];C.selectWeapon(WP);const off0=C.props.filter(e=>{const c=e.bb.getCenter(new T.Vector3()).project(C.cam);return Math.abs(c.x)>1.05||Math.abs(c.y)>1.05;});const st={offProps:off0.length,phase:'props',shotsProps:0,tSummon:null,shotsFight:0,tClear:null,onPartF:0,missF:0,coins:0,propsInit:C.props.length,removedAtSummon:null};let t=0;
 const proj=(p)=>{const v=p.clone().project(C.cam);return v;};

@@ -18,11 +18,14 @@ html,body{margin:0;height:100%;background:#0a0810;overflow:hidden;font-family:sy
 #ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,6,12,.78);color:#fff;text-align:center;z-index:5}
 #ov .box{max-width:520px;max-height:92vh;overflow:auto;padding:24px 28px;background:#221c2b;border:2px solid #ffd54a;border-radius:16px}
 #ov h1{margin:0 0 8px;font-size:26px}#ov p{margin:6px 0;line-height:1.5;font-size:16px}
-#ov .box{max-width:min(94vw,640px);padding:clamp(10px,2.2vh,22px) clamp(12px,2.5vw,26px)}
+#ov .box{max-width:min(96vw,760px);padding:clamp(10px,2.2vh,22px) clamp(12px,2.5vw,26px)}
 #ov h1{font-size:clamp(18px,4vh,26px)}#ov p{font-size:clamp(12px,2.6vh,16px);margin:4px 0}
 @media (max-height:640px){#ov p{line-height:1.3;margin:3px 0}#ov .box{max-height:97vh}#ov .cards button{padding:4px 10px}}
 #ov .coinline{font-size:clamp(13px,2.6vh,16px);margin:6px 0}
-#ov .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#ov .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
+#ov .card .cd:nth-of-type(2){font-size:11px}
+@media (max-height:640px){#ov .card .cd:nth-of-type(2){display:none}#ov .card .cd{font-size:11px;line-height:1.2}}
+#ov button#go,#ov button#again{position:sticky;bottom:0;z-index:2;box-shadow:0 0 0 6px #221c2b}
 #ov .card{background:#2e2639;border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px}
 #ov .cn{font-weight:800;font-size:clamp(13px,2.8vh,16px)}#ov .cn span{color:#ffd54a;font-size:.9em}
 #ov .cd{font-size:clamp(12px,2.4vh,14px);opacity:.85;line-height:1.3;flex:1}
@@ -38,7 +41,7 @@ html,body{margin:0;height:100%;background:#0a0810;overflow:hidden;font-family:sy
 #ov .zones{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}#ov .zones .zb{margin:0;padding:4px 2px;font-size:clamp(11px,2.2vh,13px);border-radius:8px;background:#3a3149;color:#fff;font-weight:600}#ov .zones .zb.cur{background:#ffd54a;color:#2a1f00}#ov .zones .zb:disabled{opacity:.35}
 #ov .box.showrec .zones{display:none}
 #ov button.alt{font-size:clamp(13px,2.8vh,16px);padding:8px 14px}
-@media (max-height:430px){#ov .rules{display:none}#ov .zones{grid-template-columns:repeat(8,1fr);gap:3px}#ov .zones .zb{font-size:10px;padding:3px 0}#ov .box{padding-top:8px;padding-bottom:8px}#ov h1{margin-bottom:2px}}
+@media (max-height:430px){#ov .cards{grid-template-columns:repeat(5,1fr)}#ov .card .cd:nth-of-type(1){font-size:10px}#ov .dex{display:none}#ov .coinline{margin:2px 0}#ov .box{max-height:100vh}#ov .rules{display:none}#ov .zones{grid-template-columns:repeat(8,1fr);gap:3px}#ov .zones .zb{font-size:10px;padding:3px 0}#ov .box{padding-top:8px;padding-bottom:8px}#ov h1{margin-bottom:2px}}
 #ov button{margin-top:14px;font-size:18px;padding:10px 26px;border-radius:12px;border:0;background:#ffd54a;color:#2a1f00;font-weight:800}
 #rot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0810;color:#fff;font-size:20px;z-index:9;text-align:center}
 @media (orientation:portrait){#rot{display:flex}}

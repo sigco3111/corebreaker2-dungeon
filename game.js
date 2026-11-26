@@ -743,7 +743,7 @@ function showResult() {
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}개${autoCleared ? ` · 자동 정리 ${autoCleared}개(소환 때 시야를 가려 치운 것, 코인 없음)` : ''}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  sgEl.style.display = 'none'; ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}개${autoCleared ? ` · 자동 정리 ${autoCleared}개(소환 때 시야를 가려 치운 것, 코인 없음)` : ''}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('nextz').onclick = () => { save.zone = nextZone(ZONE); writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); };
   $('again').onclick = () => { save.visits[ZONE] = VISIT; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); location.href = u.toString(); };
