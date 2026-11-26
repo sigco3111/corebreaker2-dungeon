@@ -21,7 +21,7 @@ const THEMES = [
   { n: '기둥의 방', p: ['pillar', 'column', 'candle_triple', 'chest', 'box_small', 'coin_stack_medium'], fl: 'floor_tile_large', c: 0xb0a0ff },
   { n: '침실과 서재', p: ['bed_frame', 'shelf_large', 'shelf_small', 'chair', 'table_medium', 'candle_triple', 'bottle_B_brown'], fl: 'floor_tile_large', c: 0xff98c0 },
   { n: '창고', p: ['box_stacked', 'crates_stacked', 'box_large', 'box_small', 'barrel_large', 'barrel_small_stack'], fl: 'floor_dirt_large', c: 0x9fe8b8 },
-  { n: '무기고', p: ['shelf_large', 'shelf_small', 'crates_stacked', 'box_large', 'keg'], fl: 'floor_tile_large', c: 0xff8a60 }];
+  { n: '무기고', p: ['shelf_large', 'shelf_small', 'crates_stacked', 'box_large', 'keg'], fl: 'floor_tile_large', c: 0xff5a48 }];
 const T = THEMES[(ZONE - 1) % 8];
 const MOVEP = {   // 종류별 이동 패턴(속도 배율, 평균 약 1)
   rogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5, skelrogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5,
@@ -226,7 +226,7 @@ for (let i = -1; i <= 1; i++) for (let j = J0; j < 3; j++) put(T.fl, i * 4.2, -2
 const FEAT = { 1: ['platR', 'nicheL'], 2: ['platL', 'platR'], 3: ['cols'], 4: ['brokencols', 'rubble'], 5: ['cols', 'nicheL', 'nicheR'], 6: ['nicheL', 'platR'], 7: ['platL', 'platR'], 8: ['nicheL', 'nicheR', 'cols2'] }[ZONE];
 const WVS = { 1: ['wall', 'wall', 'wall_cracked', 'wall_doorway'], 2: ['wall', 'wall', 'wall_arched', 'wall_doorway'], 3: ['wall_arched', 'wall_arched', 'wall', 'wall_doorway'], 4: ['wall_broken', 'wall_broken', 'wall_cracked', 'wall_cracked'], 5: ['wall_arched', 'wall', 'wall_arched', 'wall'], 6: ['wall', 'wall', 'wall_doorway', 'wall_cracked'], 7: ['wall', 'wall_cracked', 'wall_cracked', 'wall_broken'], 8: ['wall', 'wall', 'wall', 'wall_cracked'] };
 const WV = WVS[ZONE];
-const ZBG = { 1: 0x1a1008, 2: 0x1a1408, 3: 0x1a0e0a, 4: 0x0c1220, 5: 0x120c22, 6: 0x1a0c16, 7: 0x0c1a14, 8: 0x1a0c0a }[ZONE];
+const ZBG = { 1: 0x1a1008, 2: 0x1a1408, 3: 0x1a0e0a, 4: 0x0c1220, 5: 0x120c22, 6: 0x1a0c16, 7: 0x0c1a14, 8: 0x2a0707 }[ZONE];
 sc.background.set(ZBG); sc.fog.color.set(ZBG);
 for (let i = -1; i <= 1; i++) { const w_ = WV[Math.floor(R() * WV.length)]; if ((i == -1 && FEAT.includes('nicheL')) || (i == 1 && FEAT.includes('nicheR'))) continue; put(w_, i * 4.2, -12.6, 1); }
 for (let j = J0; j < 3; j++) { put(WV[Math.floor(R() * WV.length)], -6.9, -2.1 - j * 4.2, 1, Math.PI / 2); put(WV[Math.floor(R() * WV.length)], 6.9, -2.1 - j * 4.2, 1, -Math.PI / 2); }
