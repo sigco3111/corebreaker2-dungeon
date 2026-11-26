@@ -23,6 +23,12 @@ const THEMES = [
   { n: '창고', p: ['box_stacked', 'crates_stacked', 'box_large', 'box_small', 'barrel_large', 'barrel_small_stack'], fl: 'floor_dirt_large', c: 0xffc080 },
   { n: '무기고', p: ['shelf_large', 'shelf_small', 'crates_stacked', 'box_large', 'keg'], fl: 'floor_tile_large', c: 0xff8a60 }];
 const T = THEMES[(ZONE - 1) % 8];
+const ZRULES = [
+  { t: '장전이 빠르다', rl: .8 }, { t: '코인 +50%, 수호자 약간 빠름', coin: 1.5, spd: 1.1 },
+  { t: '게이지가 빨리 찬다', gg: 1.6 }, { t: '수호자가 빠르다', spd: 1.25 },
+  { t: '방어 시간이 짧다, 수호자 약간 빠름', blk: .8, spd: 1.1 }, { t: '장전 느림, 게이지 빠름', rl: 1.3, gg: 1.3 },
+  { t: '코인 +30%, 방어 시간 김', coin: 1.3, blk: 1.15 }, { t: '수호자 빠름, 방어 짧음, 장전 약간 빠름', spd: 1.15, blk: .85, rl: .9 }];
+const ZR = ZRULES[(ZONE - 1) % 8];
 let s = ZONE * 7919 + VISIT * 104729 + 13;
 const R = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 
@@ -140,6 +146,7 @@ function marchVoxels(e, r) {  // returns {t,p,i} or null
 
 let totalCoins = 0, propsBroken = 0, shots = 0, hitsLanded = 0;
 function addCoins(n, wx, wy, wz) {
+  n = Math.round(n * (ZR.coin || 1));
   totalCoins += n; $('tr').textContent = '코인 ' + totalCoins;
   const v = new THREE.Vector3(wx, wy, wz).project(cam);
   const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+' + n;
@@ -220,7 +227,7 @@ const GOKEYS = ['knight', 'barbarian', 'mage', 'rogue', 'skelwar', 'skelmage', '
 const GWARN = .5;
 const ZRANK = (ZONE - 2 + 8) % 8;   // 진행 순서 0..7 (2→3→…→8→1)
 const DIFF = Math.min(9, Math.max(0, VISIT - 1) + Math.floor(ZRANK / 2));
-const D_BLOCK = (1 + .08 * DIFF) * .7, D_OPEN = Math.max(.7, 1 - .04 * DIFF) * 1.9, D_SPEED = 1 + .05 * DIFF;
+const D_BLOCK = (1 + .08 * DIFF) * .7, D_OPEN = Math.max(.7, 1 - .04 * DIFF) * 1.9, D_SPEED = (1 + .05 * DIFF) * (ZR.spd || 1);
 const GS = [];
 const kcolor = new THREE.Color();
 function downsample(vox) {   // 2x2x2 묶음: 부위(장비)가 있으면 그 부위가 우선
@@ -452,7 +459,7 @@ const ammo = [12, 6, 3]; let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
   if (ammo[2] >= MAG[2].n) return;
-  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1);
+  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1) * (ZR.gg || 1);
   if (gauge >= GAUGE_MAX) { gauge = 0; ammo[2] = MAG[2].n + (wLvl(2) >= 4 ? 1 : 0); $('tc').innerHTML = '게이지 완충!<br>관통탄 장전'; flashT = .9; sfx('warn'); }
 }
 function applyHit(h) {
@@ -507,7 +514,7 @@ window.addEventListener('keydown', e => {
   if (k === '1' || k === '2' || k === '3') { selectWeapon(+k - 1); }
   else if (k === 'r') {
     if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
-    if (reloadT <= 0 && ammo[cw] < MAG[cw].n) { reloadT = MAG[cw].rl; reloadW = cw; }
+    if (reloadT <= 0 && ammo[cw] < MAG[cw].n) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
   }
 });
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
@@ -527,7 +534,7 @@ function fire(nx, ny) {
   if (!TEST) {
     if (reloadT > 0 && reloadW === cw) return;
     if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 탄약 없음<br>적을 명중해 게이지 충전'; flashT = .7; return; }
-    ammo[cw]--; if (cw < 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl; reloadW = cw; }
+    ammo[cw]--; if (cw < 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
@@ -594,7 +601,7 @@ function updateCollapse(g, dt) {
 }
 function updateGuardian(g, dt) {
   g.gT += dt; g.age = (g.age || 0) + dt;
-  const gopen = g.slot.gopen * D_OPEN * (GTYPES[g.key].go || 1), gblock = g.slot.gblock * D_BLOCK * (GTYPES[g.key].gb || 1);
+  const gopen = g.slot.gopen * D_OPEN * (GTYPES[g.key].go || 1), gblock = g.slot.gblock * D_BLOCK * (ZR.blk || 1) * (GTYPES[g.key].gb || 1);
   if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; sfx('warn'); }
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
@@ -646,7 +653,7 @@ canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
+  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
   ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('go').onclick = () => { ov.style.display = 'none'; started = true; };

@@ -1,0 +1,8 @@
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
+const K=+(location.hash.slice(1)||0);const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage';
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;const g=C.GS[1];const cv=d.querySelector('canvas');
+const key=Object.keys(g.PARTS).find(c=>g.marks[c]);
+for(let i=0;i<K;i++)C.update(.04);
+const m=g.marks[key];const p=C.projectPoint(m.x+g.off,m.y,m.z+.25);const r=cv.getBoundingClientRect();
+cv.dispatchEvent(new w.PointerEvent('pointermove',{clientX:r.left+(p[0]*.5+.5)*r.width,clientY:r.top+(-p[1]*.5+.5)*r.height,bubbles:true}));
+C.update(0.0001);document.title='bob='+g.bob.toFixed(3)+' off='+g.off.toFixed(3)+' tag='+d.getElementById('cross').textContent;},1500);</script>
