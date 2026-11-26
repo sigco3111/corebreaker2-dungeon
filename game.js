@@ -317,7 +317,7 @@ function exposeCore(g) {
 }
 function popLabel(text, wp) {
   const v = wp.clone().project(cam); const d = document.createElement('div');
-  d.textContent = text; d.style.cssText = `position:absolute;left:${(v.x * .5 + .5) * 100}%;top:${(-v.y * .5 + .5) * 100}%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:3.2vmin;text-shadow:0 0 6px #f80,0 0 14px #f40,0 2px 0 #000;transition:all .9s ease-out;opacity:1`;
+  d.textContent = text; d.style.cssText = `position:absolute;left:${(v.x * .5 + .5) * 100}%;top:${(-v.y * .5 + .5) * 100}%;transform:translate(-50%,-50%);z-index:30;pointer-events:none;color:#fff;font-weight:900;font-size:4.4vmin;white-space:nowrap;-webkit-text-stroke:1px #000;text-shadow:0 0 8px #f80,0 0 18px #f40,0 3px 0 #000;transition:all .9s ease-out;opacity:1`;
   document.body.appendChild(d); requestAnimationFrame(() => { d.style.top = `calc(${(-v.y * .5 + .5) * 100}% - 8vmin)`; d.style.opacity = '0'; d.style.transform = 'translate(-50%,-50%) scale(1.4)'; }); setTimeout(() => d.remove(), 1000);
 }
 function breakPart(g, c) {
