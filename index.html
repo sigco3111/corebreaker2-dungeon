@@ -1,0 +1,34 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>코어브레이커2 : 와장창 던전</title>
+<style>
+html,body{margin:0;height:100%;background:#0a0810;overflow:hidden;font-family:system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+#stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);overflow:hidden;background:#120f16}
+#c{display:block;width:100%;height:100%;cursor:none}
+.hud{position:absolute;color:#fff;text-shadow:0 1px 3px #000;font-weight:700;pointer-events:none}
+#tl{left:1.2%;top:2%;font-size:2.6vmin;line-height:1.35}
+#tl small{font-weight:500;opacity:.85;font-size:2.1vmin}
+#tr{right:1.2%;top:2%;font-size:3vmin;background:rgba(0,0,0,.45);padding:.4vmin 2vmin;border-radius:3vmin}
+#tc{left:50%;top:2%;transform:translateX(-50%);text-align:center;font-size:2.3vmin;background:rgba(0,0,0,.5);padding:.6vmin 2.4vmin;border-radius:2vmin}
+#cross{width:4.4vmin;height:4.4vmin;margin:-2.2vmin 0 0 -2.2vmin;border:2px solid #fff;border-radius:50%;opacity:.9;left:50%;top:50%}
+#cross:after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;background:#fff;border-radius:50%}
+#bot{left:50%;bottom:2%;transform:translateX(-50%);font-size:2vmin}
+#bot div{background:rgba(0,0,0,.5);padding:.8vmin 2.2vmin;border-radius:1.6vmin;border:2px solid #ffd54a}
+.pop{position:absolute;color:#ffd54a;font-weight:800;font-size:3vmin;text-shadow:0 1px 3px #000;pointer-events:none;transition:transform .9s ease-out,opacity .9s ease-out}
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,6,12,.78);color:#fff;text-align:center;z-index:5}
+#ov .box{max-width:520px;padding:24px 28px;background:#221c2b;border:2px solid #ffd54a;border-radius:16px}
+#ov h1{margin:0 0 8px;font-size:26px}#ov p{margin:6px 0;line-height:1.5;font-size:16px}
+#ov button{margin-top:14px;font-size:18px;padding:10px 26px;border-radius:12px;border:0;background:#ffd54a;color:#2a1f00;font-weight:800}
+#rot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0810;color:#fff;font-size:20px;z-index:9;text-align:center}
+@media (orientation:portrait){#rot{display:flex}}
+#err{position:fixed;left:0;bottom:0;color:#f88;font-size:10px;z-index:99}
+</style></head><body>
+<div id="stage"><canvas id="c"></canvas>
+<div class="hud" id="tl"></div><div class="hud" id="tr">코인 0</div><div class="hud" id="tc"></div>
+<div class="hud" id="cross"></div>
+<div class="hud" id="bot"><div>기본탄</div></div></div>
+<div id="ov"><div class="box"></div></div>
+<div id="rot">휴대폰을 가로로 돌려 주세요</div><div id="err"></div>
+<script>window.onerror=(m,s,l)=>{document.getElementById('err').textContent+=m+'@'+l+' '}</script>
+<script type="module" src="game.js"></script>
+</body></html>
