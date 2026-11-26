@@ -599,9 +599,11 @@ const bolts = [];
 function boltLine(a, b) {
   const pts = [], N = 7, d = new THREE.Vector3().subVectors(b, a), len = d.length() || 1; const jit = Math.min(.35, len * .12);
   for (let k = 0; k <= N; k++) { const t = k / N, p = new THREE.Vector3().copy(a).addScaledVector(d, t); if (k && k < N) p.add(new THREE.Vector3((Math.random() - .5) * jit, (Math.random() - .5) * jit, (Math.random() - .5) * jit)); pts.push(p); }
-  for (const col of [0xcbb6ff, 0xffffff]) { const m = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 1, depthTest: false, blending: THREE.AdditiveBlending }); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m); l.renderOrder = 9; sc.add(l); bolts.push({ l, m, t: .3 }); }
+  for (const [col, r, op] of [[0x9a6bff, .075, .55], [0xe6dcff, .03, 1]]) { const m = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }); const grp = new THREE.Group(); grp.renderOrder = 9;
+    for (let k = 0; k < N; k++) { const A = pts[k], B = pts[k + 1], dd = new THREE.Vector3().subVectors(B, A), L = dd.length(); if (L < 1e-4) continue; const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 5), m); me.position.copy(A).addScaledVector(dd, .5); me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dd.normalize()); me.renderOrder = 9; grp.add(me); }
+    sc.add(grp); bolts.push({ l: grp, m, op, t: .55 }); }
 }
-function updBolts(dt) { for (let k = bolts.length - 1; k >= 0; k--) { const b = bolts[k]; b.t -= dt; b.m.opacity = Math.max(0, b.t / .3); if (b.t <= 0) { sc.remove(b.l); b.l.geometry.dispose(); b.m.dispose(); bolts.splice(k, 1); } } }
+function updBolts(dt) { for (let k = bolts.length - 1; k >= 0; k--) { const b = bolts[k]; b.t -= dt; b.m.opacity = b.op * Math.max(0, Math.min(1, b.t / .3)); if (b.t <= 0) { sc.remove(b.l); b.l.children.forEach(c => c.geometry.dispose()); b.m.dispose(); bolts.splice(k, 1); } } }
 function chainTargets() {
   const out = [];
   for (const e of props) { if (e.dead) continue; out.push({ k: 'prop', e, pos: e.bb.getCenter(new THREE.Vector3()) }); }
