@@ -1,0 +1,10 @@
+<!doctype html><title>run</title><iframe id=f src="../index.html?visit=1&g=knight,barbarian,mage" width=800 height=450></iframe><script>
+const out=[];const f=document.getElementById('f');
+setTimeout(()=>{const C=f.contentWindow.__cb2;C.selectWeapon(0);let n=0;
+const iv=setInterval(()=>{n++;const a0=C.ammo[0];C.update(.3);C.fire(0.05,0.0);if(n==60){clearInterval(iv);
+out.push('basic after attempts: '+C.ammo[0]+' reloadT '+C.reloadT.toFixed(2));
+setTimeout(()=>{C.update(2);out.push("basic after wait: "+C.ammo[0]);
+C.selectWeapon(2);let k=0;const iv2=setInterval(()=>{k++;C.update(.5);C.fire(0.05,0);if(k==30){clearInterval(iv2);out.push('pierce ammo '+C.ammo[2]+' gauge '+C.gauge);
+C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});C.gaugeUp({kind:'knight',g:{},pshot:false});
+out.push('after 7 hits gauge '+C.gauge+' pierce ammo '+C.ammo[2]);document.title='done:'+out.join(' | ');}},500);},3000);}},100);},3000);
+</script>
