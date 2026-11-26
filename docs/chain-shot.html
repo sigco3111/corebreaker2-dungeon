@@ -1,0 +1,15 @@
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{display:block;border:0}</style><iframe id=f width=1266 height=585></iframe><script>
+const Z=location.hash.slice(1)||'4';const f=document.getElementById('f');f.src='../index.html?visit=1&zone='+Z+'&g=knight,barbarian,mage';
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;C.selectWeapon(0);
+const log=[];const tgt=[];for(const g of C.GS)for(const c of Object.keys(g.PARTS))tgt.push([g,c]);
+let idx=0,sim=0,ticks=0,lastCoins=C.coins,waited=false;
+const iv=setInterval(()=>{ticks++;C.update(.1);sim+=.1;
+ if(idx>=tgt.length||ticks>600){clearInterval(iv);document.title='done:zone'+Z+' chain='+(C.ZR.chain||0)+' tgt='+tgt.length+' idx='+idx+' ticks='+ticks+' hits='+C.hits+' ammo='+C.ammo[0]+' marks='+Object.keys(C.GS[0].marks||{}).join(',')+' '+log.join(' ; ');return;}
+ const [g,c]=tgt[idx];if(!g.PARTS[c].alive){const dc=C.coins-lastCoins;log.push(g.name+':'+g.PARTS[c].name+' t='+sim.toFixed(1)+' +'+dc);lastCoins=C.coins;idx++;
+   if(idx==tgt.length-1&&!waited){waited=true;C.update(7.5);sim+=7.5;log.push('--waited 7.5s--');}return;}
+ const m=g.marks&&g.marks[c];if(!m)return;
+ if(g.gmode==='block')return;
+ const p0=C.projectPoint(m.x+g.off,m.y,m.z+.25);let aim=null;
+ for(let r=0;r<=10&&!aim;r++)for(let a=0;a<(r?12:1)&&!aim;a++){const x=p0[0]+Math.cos(a*.5236)*r*.012,y=p0[1]+Math.sin(a*.5236)*r*.02;const h=C.pickHit(x,y).best;if(h&&h.kind==='knight'&&h.g===g&&g.K.cat[h.i]==c)aim=[x,y];}
+ if(aim)C.fire(aim[0],aim[1]);},30);
+},2500);</script>
