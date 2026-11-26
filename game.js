@@ -587,7 +587,7 @@ function runStage() {
   const info = { stage: STAGE, props: TOTAL_PROPS, unreachable: [] };
   if (STAGE >= 1) {
     const tgt = props.slice(0, Math.min(STAGE === 1 ? 5 : TOTAL_PROPS, props.length));
-    for (const e of tgt) { for (let k = 0; k < 40 && !e.dead; k++) { if (!aimFor(r => r.kind === 'prop' && r.e === e, e)) { info.unreachable.push(e.name); break; } sim(.05); } }
+    for (const e of tgt) { for (let k = 0; k < 40 && !e.dead; k++) { if (!aimFor(r => r.kind === 'prop' && r.e === e, e)) { info.unreachable.push(e.name + ':' + e.count + '/' + e.total + ':z' + e.bb.getCenter(new THREE.Vector3()).z.toFixed(1) + 'x' + e.bb.getCenter(new THREE.Vector3()).x.toFixed(1)); break; } sim(.05); } }
     sim(.3); info.propsBroken = propsBroken; info.coins = totalCoins;
   }
   if (STAGE >= 2) {
