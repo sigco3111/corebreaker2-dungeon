@@ -161,8 +161,25 @@ function damageProp(e, p, radius) {
   e.mesh.instanceMatrix.needsUpdate = true;
   if (!e.dead && e.count < e.total * .4) breakProp(e);
 }
+// ---------- 효과음 (WebAudio 합성, 외부 에셋 없음) ----------
+let AC = null, muted = false;
+function ac() { if (muted) return null; if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } } if (AC.state === 'suspended') AC.resume(); return AC; }
+function tone(f0, f1, dur, type, vol, delay = 0) { const a = ac(); if (!a) return; const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + .02); }
+function noise(dur, vol, delay = 0, hp = 800) { const a = ac(); if (!a) return; const t = a.currentTime + delay, n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const s = a.createBufferSource(); s.buffer = b; const f = a.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp; const g = a.createGain(); g.gain.value = vol; s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); }
+const SFX = {
+  shot: () => tone(520, 180, .09, 'square', .05),
+  prop: () => { noise(.18, .12, 0, 600); tone(200, 80, .12, 'triangle', .08); },
+  part: () => { noise(.25, .16, 0, 400); tone(300, 90, .2, 'sawtooth', .08); },
+  block: () => { tone(900, 700, .12, 'sine', .08); tone(1350, 1000, .1, 'sine', .05, .02); },
+  core: () => { tone(300, 900, .35, 'sine', .1); tone(450, 1300, .35, 'sine', .06, .05); },
+  collapse: () => { noise(.9, .22, 0, 120); tone(120, 40, .8, 'sawtooth', .12); },
+  warn: () => tone(660, 660, .08, 'sine', .04)
+};
+const sfx = k => { try { SFX[k](); } catch (e) { } };
+window.addEventListener('pointerdown', () => ac(), { once: true });
+{ const mb = document.getElementById('mute'); if (mb) { mb.addEventListener('pointerdown', e => e.stopPropagation()); mb.onclick = () => { muted = !muted; mb.textContent = muted ? '소리 끔' : '소리 켬'; }; } }
 function breakProp(e) {
-  e.dead = true; propsBroken++; save.dex[e.name] = (save.dex[e.name] || 0) + 1;
+  sfx('prop'); e.dead = true; propsBroken++; save.dex[e.name] = (save.dex[e.name] || 0) + 1;
   let c = 0;
   for (let i = 0; i < e.n; i++) if (e.alive[i]) { removeVoxel(e, i, (c++ % 3) === 0, null); }
   e.mesh.instanceMatrix.needsUpdate = true; sc.remove(e.mesh);
@@ -268,6 +285,7 @@ function setStatus() { const left = GS.filter(g => g.kstate !== 'collapse' && g.
 function flashText(t) { $('tc').innerHTML = t; flashT = .8; }
 const flashSetStatusSoon = () => { };
 function exposeCore(g) {
+  sfx('core');
   const { K, CORE } = g; g.kstate = 'exposed'; setStatus();
   const r1 = .55 * g.rel;
   for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] === 0) {
@@ -286,6 +304,7 @@ function exposeCore(g) {
   shake = .5;
 }
 function breakPart(g, c) {
+  sfx('part');
   const { K } = g; const pt = g.PARTS[c]; pt.alive = false; g.partsBroken++; let k = 0;
   for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
     K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO);
@@ -411,7 +430,7 @@ function applyHit(h) {
   hitsLanded++;
   if ((h.kind === 'knight' || h.kind === 'core') && h.g.gmode === 'block') {
     const q = h.wp || h.p; burst(q.x, q.y, q.z, 150, 190, 255, 8, 4, .05); shake = Math.max(shake, .1);
-    $('tc').innerHTML = '수호자 방어!<br>막혔다'; flashT = .6; deflects++; return 'stop';
+    $('tc').innerHTML = '수호자 방어!<br>막혔다'; flashT = .6; deflects++; sfx('block'); return 'stop';
   }
   if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); }
   else if (h.kind === 'knight') hitKnight(h);
@@ -457,7 +476,7 @@ function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; 
 function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < 5) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
-  cooldown = TEST ? 0 : wCd(cw); shots++;
+  cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   const { best, far } = pickHit(nx, ny);
   const target = best ? (best.wp || best.p) : far;
   if (TEST) { if (best) applyHit(best); return; }
@@ -474,6 +493,7 @@ function updateFlying(dt) {
 
 // ---------- 붕괴와 결과 ----------
 function collapse(g) {
+  sfx('collapse');
   const { K, CORE, kv } = g; g.kstate = 'collapse'; g.collapseT = 0; g.aura.material.opacity = 0; setStatus();
   for (let i = 0; i < K.n; i++) {
     if (!K.alive[i]) continue;
@@ -500,7 +520,7 @@ function updateCollapse(g, dt) {
 function updateGuardian(g, dt) {
   g.gT += dt;
   const gopen = g.slot.gopen * D_OPEN, gblock = g.slot.gblock * D_BLOCK;
-  if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; }
+  if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; sfx('warn'); }
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
   const sp = g.gmode === 'open' ? 1 : g.gmode === 'warn' ? .35 : 0;
