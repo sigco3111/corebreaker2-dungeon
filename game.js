@@ -707,7 +707,7 @@ function runStage() {
     for (const g of GS) for (const c of [1, 4, 3].filter(c => g.PARTS[c])) { for (let k = 0, w = 0; k < 400 && g.PARTS[c].alive; k++) { if (!aimFor(r => r.kind === 'knight' && r.g === g && g.K.cat[r.i] == c, g.K)) { if (++w > 200) { info.unreachable.push(g.name + ':part' + c + ':hp' + g.PARTS[c].hp + ':' + g.gmode + ':' + g.kstate); break; } sim(.1); continue; } sim(.05); } }
     sim(.5); info.guardians = GS.map(g => g.name + ':' + g.kstate + ':' + g.partsBroken);
   }
-  if (STAGE >= 3) { for (const g of GS) if (g.kstate === 'exposed') { aimAt(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0))); sim(.1); } sim(STAGE === 3 ? .45 : STAGE === 4 ? 1.4 : 5); info.guardians = GS.map(g => g.name + ':' + g.kstate); }
+  if (STAGE >= 3) { for (const g of GS) { for (let k = 0; k < 30 && g.kstate === 'exposed'; k++) { aimAt(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0))); sim(.1); } if (g.kstate === 'exposed') info.coreMiss = (info.coreMiss || 0) + 1; } sim(STAGE === 3 ? .45 : STAGE === 4 ? 1.4 : 5); info.guardians = GS.map(g => g.name + ':' + g.kstate); }
   { const rg = GS.map(g => [g.slot.x - g.slot.amp + g.K.bb.min.x, g.slot.x + g.slot.amp + g.K.bb.max.x]); info.gaps = [+(rg[1][0] - rg[0][1]).toFixed(2), +(rg[2][0] - rg[1][1]).toFixed(2)]; info.edge = [+rg[0][0].toFixed(2), +rg[2][1].toFixed(2)]; }
   if (q.get('adv')) { sim(+q.get('adv')); info.off = GS.map(g => +g.off.toFixed(2)); info.modes = GS.map(g => g.gmode); }
   info.hits = hitsLanded; info.shots = shots;
