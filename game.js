@@ -287,14 +287,14 @@ function niche(i) {
 }
 function columns(broken, pairs) {
   const zs = pairs == 2 ? [-6.4, -10] : [-5.8, -8.4, -11];
-  zs.forEach(z => { [-1, 1].forEach(sd => { const x = sd * (3.7 + R() * .3); if (broken && R() < .6) { put('column', x, z, 1.5, 0); put('rubble_half', x + (R() - .5) * .6, z + .3, .7, R() * 3); } else put('pillar', x, z, 1.0, 0); obst.push([x, z, 1.0]); }); });
+  zs.forEach(z => { [-1, 1].forEach(sd => { const x = sd * (3.7 + R() * .3); if (broken && R() < .6) { put('column', x, z, 1.5, 0, 0, true); put('rubble_half', x + (R() - .5) * .6, z + .3, .7, R() * 3, 0, true); } else put('pillar', x, z, 1.0, 0, 0, true); obst.push([x, z, 1.0]); }); });
 }
 const big = ZONE == 2 || ZONE == 7;
 FEAT.forEach(f => {
   if (f == 'platL') platform(-1, big ? 0.8 + R() * .4 : 0.6); else if (f == 'platR') platform(1, big ? 0.8 + R() * .4 : 0.6);
   else if (f == 'nicheL') niche(-1); else if (f == 'nicheR') niche(1);
   else if (f == 'cols') columns(false, 3); else if (f == 'cols2') columns(false, 2); else if (f == 'brokencols') columns(true, 3);
-  else if (f == 'rubble') { [-1, 1].forEach(sd => { const x = sd * (3.6 + R() * 1.2), z = -3.6 - R() * 7; put('rubble_large', x, z, .8, R() * 6); obst.push([x, z, 1.8]); }); }
+  else if (f == 'rubble') { [-1, 1].forEach(sd => { const x = sd * (3.6 + R() * 1.2), z = -3.6 - R() * 7; put('rubble_large', x, z, .8, R() * 6, 0, true); obst.push([x, z, 1.8]); }); }
 });
 // 부술 물체: 카메라 기준 약 4.8~9.2m 뒤 구간(z -4.8..-9.2), 가운데 통로와 수호자 주변은 비움
 const placed = obst.slice(); const cnt = 10 + Math.floor(R() * 5);
@@ -307,7 +307,7 @@ for (let k = 0, t = 0; k < cnt && t < 400; t++) {
   placed.push([x, z, rad]); put(nm, x, z, sz_, Math.floor(R() * 4) * Math.PI / 2 + (R() - .5) * .4, 0, true); k++;
 }
 { const LOW = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small'];
-  for (let k = 0, t = 0; k < 4 && t < 100; t++) { const x = (R() * 2 - 1) * 5, z = -2.4 - R() * 2.0; if (Math.abs(x) < 2.4) continue; const nm = LOW[Math.floor(R() * LOW.length)]; const d = P[nm]; if (!d) continue; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * .6; if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue; placed.push([x, z, rad]); put(nm, x, z, 1.0, Math.floor(R() * 4) * Math.PI / 2); k++; } }
+  for (let k = 0, t = 0; k < 4 && t < 100; t++) { const x = (R() * 2 - 1) * 5, z = -2.4 - R() * 2.0; if (Math.abs(x) < 2.4) continue; const nm = LOW[Math.floor(R() * LOW.length)]; const d = P[nm]; if (!d) continue; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * .6; if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue; placed.push([x, z, rad]); put(nm, x, z, 1.0, Math.floor(R() * 4) * Math.PI / 2, 0, true); k++; } }
 const TOTAL_PROPS = props.length;
 
 // ---------- 사격 ----------
