@@ -1,0 +1,4 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const Z=location.hash.slice(1)||1;const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+Z;
+setTimeout(()=>{const C=f.contentWindow.__cb2;const P=C.props;let n=0;P.forEach(e=>n+=e.n);const G=C.GS.reduce((a,g)=>a+g.K.n,0);
+document.title='done:props='+P.length+' propVox='+n+' avg='+Math.round(n/P.length)+' guardianVox='+G+' names='+[...new Set(P.map(e=>e.name))].join(',');},3000);</script>
