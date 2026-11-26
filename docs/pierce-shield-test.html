@@ -1,0 +1,10 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage';
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res=[];
+const g=C.GS[0];g.gmode='open';
+const find=cat=>{for(let x=-1;x<=1;x+=.006)for(let y=-.6;y<=.6;y+=.006){const h=C.pickHit(x,y).best;if(h&&h.kind=='knight'&&h.g===g&&g.K.cat[h.i]==cat)return[x,y];}return null;};
+const sp=find(4),hp=()=>g.PARTS[4]?g.PARTS[4].hp:'gone';
+res.push('shield part '+(g.PARTS[4]&&g.PARTS[4].name)+' hp0 '+hp());
+if(sp){C.resolveShot(sp[0],sp[1],1,2,true,1);res.push('pierce(first shot) -> '+hp());}
+const hp3=()=>g.PARTS[3]?g.PARTS[3].hp:'gone';const sw=find(3);res.push('sword hp0 '+hp3());if(sw){C.resolveShot(sw[0],sw[1],1,2,true,1);res.push('pierce on sword -> '+hp3());}
+document.title='done:'+res.join(' ; ');},3000);</script>
