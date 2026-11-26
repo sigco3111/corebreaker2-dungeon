@@ -44,7 +44,7 @@ html,body{margin:0;height:100%;background:#0a0810;overflow:hidden;font-family:sy
 #ov .zones{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}#ov .zones .zb{margin:0;padding:4px 2px;font-size:clamp(11px,2.2vh,13px);border-radius:8px;background:#3a3149;color:#fff;font-weight:600}#ov .zones .zb.cur{background:#ffd54a;color:#2a1f00}#ov .zones .zb:disabled{opacity:.35}
 #ov .box.showrec .zones{display:none}
 #ov button.alt{font-size:clamp(13px,2.8vh,16px);padding:8px 14px}
-@media (max-height:430px){#ov .coinline{display:none}#ov .card .cn+.cd{display:none}#ov .box{max-height:94vh!important;padding-top:6px!important;padding-bottom:6px!important}#ov h1{font-size:18px!important}#ov .cards{grid-template-columns:repeat(5,1fr)}#ov .card .cd:nth-of-type(1){font-size:10px}#ov .dex{display:none}#ov .coinline{margin:2px 0}#ov .box{max-height:96vh}#ov .rules{display:none}#ov .zones{grid-template-columns:repeat(8,1fr);gap:3px}#ov .zones .zb{font-size:10px;padding:3px 0}#ov .box{padding-top:8px;padding-bottom:8px}#ov h1{margin-bottom:2px}}
+@media (max-height:430px){#ov .card .cn+.cd{display:none}#ov .box{max-height:94vh!important;padding-top:6px!important;padding-bottom:6px!important}#ov h1{font-size:18px!important}#ov .cards{grid-template-columns:repeat(5,1fr)}#ov .card .cd:nth-of-type(1){font-size:10px}#ov .dex{display:none}#ov .coinline{display:block!important;margin:2px 0;font-size:13px}#ov .box{max-height:96vh}#ov .rules{display:none}#ov .zones{grid-template-columns:repeat(8,1fr);gap:3px}#ov .zones .zb{font-size:10px;padding:3px 0}#ov .box{padding-top:8px;padding-bottom:8px}#ov h1{margin-bottom:2px}}
 #ov button{margin-top:14px;font-size:18px;padding:10px 26px;border-radius:12px;border:0;background:#ffd54a;color:#2a1f00;font-weight:800}
 #rot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a0810;color:#fff;font-size:20px;z-index:9;text-align:center}
 @media (orientation:portrait){#rot{display:flex}}
@@ -60,7 +60,7 @@ html,body{margin:0;height:100%;background:#0a0810;overflow:hidden;font-family:sy
 @keyframes tmp{50%{transform:scale(1.04)}}
 </style></head><body>
 <div id="stage"><canvas id="c"></canvas>
-<div class="hud" id="tl"></div><div class="hud" id="tr">코인 0</div><div class="hud" id="tc"></div>
+<div class="hud" id="tl"></div><div class="hud" id="tr">이번 수입 0</div><div class="hud" id="tc"></div>
 <div class="hud" id="cross"></div>
 <div id="keys" style="position:absolute;right:8px;bottom:8px;z-index:3;padding:5px 9px;border-radius:10px;background:rgba(0,0,0,.45);color:#ddd;font-size:13px;pointer-events:none">1·2·3 탄종 / R 장전</div><div id="mute" style="position:absolute;left:8px;bottom:8px;z-index:4;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.45);color:#fff;font-size:16px;cursor:pointer;pointer-events:auto">소리 켬</div><div class="hud" id="bot"><div>기본탄</div></div></div>
 <div id="ov"><div class="box"></div></div>
