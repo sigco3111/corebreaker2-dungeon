@@ -194,7 +194,8 @@ const SLOTS = [
   { x: 3.0, z: -6.5, H: 2.0, amp: .4, per: 4.2, gopen: 2.0, gblock: 1.1 }];
 const GOKEYS = ['knight', 'barbarian', 'mage', 'rogue'];
 const GWARN = .5;
-const DIFF = Math.min(7, Math.max(0, VISIT - 1));
+const ZRANK = (ZONE - 2 + 8) % 8;   // 진행 순서 0..7 (2→3→…→8→1)
+const DIFF = Math.min(9, Math.max(0, VISIT - 1) + Math.floor(ZRANK / 2));
 const D_BLOCK = 1 + .08 * DIFF, D_OPEN = Math.max(.7, 1 - .04 * DIFF), D_SPEED = 1 + .05 * DIFF;
 const GS = [];
 const kcolor = new THREE.Color();
@@ -446,7 +447,7 @@ function shopHTML() {
 }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
-  const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.v}번째</td><td>${h.t}초</td><td>${h.a}%</td><td>${h.c}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
+  const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.z ? THEMES[h.z - 1].n + ' ' : ''}${h.v}번째</td><td>${h.t}초</td><td>${h.a}%</td><td>${h.c}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
   return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
@@ -507,7 +508,7 @@ function updateGuardian(g, dt) {
 }
 const t0 = performance.now(); let elapsed = 0;
 function showResult() {
-  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
+  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ z: ZONE, v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
   const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed);
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
