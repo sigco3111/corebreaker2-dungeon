@@ -15,7 +15,7 @@ const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
 
 const THEMES = [
   { n: '술창고', p: ['barrel_large', 'barrel_small', 'barrel_small_stack', 'keg', 'bottle_A_green', 'bottle_B_brown', 'box_small'], fl: 'floor_dirt_large', c: 0xffb060 },
-  { n: '보물방', p: ['chest', 'chest_gold', 'coin_stack_large', 'coin_stack_medium', 'key', 'box_small'], fl: 'floor_tile_large', c: 0xffd070 },
+  { n: '보물방', p: ['chest', 'chest_gold', 'coin_stack_large', 'coin_stack_medium', 'key', 'box_small'], fl: 'floor_tile_large', c: 0xfff4a8 },
   { n: '연회장', p: ['table_long', 'table_medium', 'chair', 'stool', 'plate_food_A', 'candle_triple', 'bottle_A_green'], fl: 'floor_tile_large', c: 0xff9a50 },
   { n: '무너진 회랑', p: ['rubble_large', 'rubble_half', 'crates_stacked', 'box_large', 'column', 'barrel_small'], fl: 'floor_dirt_large', c: 0xa0b8ff },
   { n: '기둥의 방', p: ['pillar', 'column', 'candle_triple', 'chest', 'box_small', 'coin_stack_medium'], fl: 'floor_tile_large', c: 0xb0a0ff },
@@ -226,7 +226,7 @@ for (let i = -1; i <= 1; i++) for (let j = J0; j < 3; j++) put(T.fl, i * 4.2, -2
 const FEAT = { 1: ['platR', 'nicheL'], 2: ['platL', 'platR'], 3: ['cols'], 4: ['brokencols', 'rubble'], 5: ['cols', 'nicheL', 'nicheR'], 6: ['nicheL', 'platR'], 7: ['platL', 'platR'], 8: ['nicheL', 'nicheR', 'cols2'] }[ZONE];
 const WVS = { 1: ['wall', 'wall', 'wall_cracked', 'wall_doorway'], 2: ['wall', 'wall', 'wall_arched', 'wall_doorway'], 3: ['wall_arched', 'wall_arched', 'wall', 'wall_doorway'], 4: ['wall_broken', 'wall_broken', 'wall_cracked', 'wall_cracked'], 5: ['wall_arched', 'wall', 'wall_arched', 'wall'], 6: ['wall', 'wall', 'wall_doorway', 'wall_cracked'], 7: ['wall', 'wall_cracked', 'wall_cracked', 'wall_broken'], 8: ['wall', 'wall', 'wall', 'wall_cracked'] };
 const WV = WVS[ZONE];
-const ZBG = { 1: 0x1a1008, 2: 0x1a1408, 3: 0x1a0e0a, 4: 0x0c1220, 5: 0x120c22, 6: 0x1a0c16, 7: 0x0c1a14, 8: 0x2a0707 }[ZONE];
+const ZBG = { 1: 0x1a1008, 2: 0x1a1a06, 3: 0x1a0e0a, 4: 0x0c1220, 5: 0x120c22, 6: 0x1a0c16, 7: 0x0c1a14, 8: 0x2a0707 }[ZONE];
 sc.background.set(ZBG); sc.fog.color.set(ZBG);
 for (let i = -1; i <= 1; i++) { const w_ = WV[Math.floor(R() * WV.length)]; if ((i == -1 && FEAT.includes('nicheL')) || (i == 1 && FEAT.includes('nicheR'))) continue; put(w_, i * 4.2, -12.6, 1); }
 for (let j = J0; j < 3; j++) { put(WV[Math.floor(R() * WV.length)], -6.9, -2.1 - j * 4.2, 1, Math.PI / 2); put(WV[Math.floor(R() * WV.length)], 6.9, -2.1 - j * 4.2, 1, -Math.PI / 2); }
