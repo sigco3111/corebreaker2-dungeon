@@ -1,11 +1,11 @@
 <!doctype html><body><script>
 localStorage.setItem('cb2.save.v1', JSON.stringify({coins:200,dex:{chest:3,key:1}}));
-const f=document.createElement('iframe'); f.width=1266; f.height=585; f.src='http://localhost:8765/index.html?visit=2'; document.body.appendChild(f);
+const f=document.createElement('iframe'); const q=new URLSearchParams(location.search); f.width=q.get('w')||1266; f.height=q.get('h')||585; f.style.border=0; document.body.style.margin=0; document.body.style.overflow='hidden'; f.src='http://localhost:8765/index.html?visit=2'; document.body.appendChild(f);
 f.onload=()=>setTimeout(()=>{
  const d=f.contentDocument, w=f.contentWindow; const log=[];
  const btn=()=>[...d.querySelectorAll('.up')];
  log.push({before:d.querySelector('.shop').innerText.replace(/\n/g,' | ')});
- btn()[1].click(); btn()[1].click();   // 범위탄 Lv1->2 (30), Lv2->3 (60)
+    // 범위탄 Lv1->2 (30), Lv2->3 (60)
  log.push({after:d.querySelector('.shop').innerText.replace(/\n/g,' | ')});
  log.push({stored:JSON.parse(localStorage.getItem('cb2.save.v1'))});
  log.push({bar:d.getElementById('bot').innerText.replace(/\n/g,' ')});

@@ -1,0 +1,15 @@
+<!doctype html><body style="margin:0;overflow:hidden"><script>
+const f=document.createElement('iframe'); f.width=1266; f.height=585; f.style.border=0; f.src='http://localhost:8765/index.html?visit=2'; document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{
+ const w=f.contentWindow,d=f.contentDocument,g=w.__cb2; d.getElementById('go').click();
+ for(let k=0;k<45;k++)g.sim(1/30);
+ const L=[],R=[];
+ for(let ix=-.95;ix<=.95;ix+=.02)for(let iy=-.4;iy<=.5;iy+=.02){const h=g.pickHit(ix,iy).best; if(h&&h.kind==='prop'){(ix<0?L:R).push([ix,iy]);}}
+ const pick=a=>a[Math.floor(a.length/2)];
+ const l=pick(L), r=pick(R);
+ g.resolveShot(l[0],l[1],2.0,0);   // 범위탄 (왼쪽)
+ g.resolveShot(r[0],r[1],1.0,0);   // 기본탄 (오른쪽)
+ for(let k=0;k<6;k++)g.sim(1/30);
+ document.title='RES'+JSON.stringify({l,r,nL:L.length,nR:R.length});
+},1500);
+</script>
