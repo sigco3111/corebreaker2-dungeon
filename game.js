@@ -289,8 +289,9 @@ function makeGuardian(typeKey, slot, idx) {
 }
 {
   const keys = []; // 방문마다 구성이 바뀜: 기사/야만전사/마법사를 섞어서 3체
-  const SIG = { 1: 'barbarian', 2: 'knight', 3: 'mage', 4: 'knight', 5: 'rogue', 6: 'mage', 7: 'rogue', 8: 'barbarian' }[ZONE];   // 구역별 대표 수호자(약 절반 확률)
-  for (let i = 0; i < 3; i++) keys.push(R() < .5 ? SIG : GOKEYS[Math.floor(R() * GOKEYS.length)]);
+  const SIG = { 1: 'barbarian', 2: 'knight', 3: 'skelmage', 4: 'knight', 5: 'rogue', 6: 'skelmage', 7: 'rogue', 8: 'barbarian' }[ZONE];   // 구역별 대표 수호자(약 절반 확률)
+  const ZPOOL = { 2: ['knight', 'skelwar', 'barbarian'], 3: ['skelwar', 'skelmage', 'skelrogue', 'skelminion'], 5: ['rogue', 'skelrogue', 'mage', 'skelmage'], 6: ['skelwar', 'skelmage', 'skelrogue', 'skelminion'], 7: ['rogue', 'skelrogue', 'mage', 'skelmage'] }[ZONE] || GOKEYS;   // 구역 테마: 갑옷/해골/민첩 구역
+  for (let i = 0; i < 3; i++) keys.push(R() < .4 ? SIG : ZPOOL[Math.floor(R() * ZPOOL.length)]);
   if (q.get('g')) q.get('g').split(',').forEach((k, i) => { if (GTYPES[k]) keys[i] = k; });   // 테스트용 강제 지정
   if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
@@ -668,7 +669,7 @@ canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
+  ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}${({ 2: ' · 중장갑 구역', 3: ' · 해골 구역', 6: ' · 해골 구역', 5: ' · 민첩 구역', 7: ' · 민첩 구역' })[ZONE] || ''}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
   ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('go').onclick = () => { ov.style.display = 'none'; started = true; };
