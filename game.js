@@ -373,7 +373,7 @@ function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1) * (h.pshot && pt.name === '방패' ? 1.5 : 1) * (h.sg && /모자|두건|지팡이|석궁/.test(pt.name) ? 1.6 : 1);   // 산탄은 천/나무 장비에 1.6배   // 관통탄은 방패 부위에 1.5배 피해 if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
+    const pt = g.PARTS[c]; let crit = 1; { const mk = g.marks && g.marks[c]; if (mk && !h.sg) { const dx = h.p.x - mk.x, dy = h.p.y - mk.y; if (dx * dx + dy * dy < Math.pow(.32 * g.rel, 2)) { crit = 1.5; if (!TEST) popLabel('급소!', new THREE.Vector3(h.p.x + g.off, h.p.y + (g.bob || 0) + .3, h.p.z + .25)); } } } pt.hp -= (h.dmg || 1) * crit * (h.pshot && pt.name === '방패' ? 1.5 : 1) * (h.sg && /모자|두건|지팡이|석궁/.test(pt.name) ? 1.6 : 1);   // 산탄은 천/나무 장비에 1.6배   // 관통탄은 방패 부위에 1.5배 피해 if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
     let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;

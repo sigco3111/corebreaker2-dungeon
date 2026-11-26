@@ -1,0 +1,11 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage';
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res=[];
+const g=C.GS[1];g.gmode='open';g.bob=0;const cat=Object.keys(g.PARTS)[0];const mk=g.marks[cat];
+const pm=C.projectPoint(mk.x+g.off,mk.y,mk.z+.25);const h1=C.pickHit(pm[0],pm[1]).best;
+const hp0=g.PARTS[cat].hp;res.push('part '+g.PARTS[cat].name+' marker pick '+(h1?h1.kind+'/'+(h1.g===g?'self':'other')+'/cat'+(h1.g?h1.g.K.cat[h1.i]:'-'):'none'));
+C.resolveShot(pm[0],pm[1],1,0,false,1);const dd=h1?[h1.p.x-mk.x,h1.p.y-mk.y,h1.p.z-mk.z].map(v=>v.toFixed(2)).join(','):'';res.push('d='+dd+' rel '+g.rel+' mk '+[mk.x,mk.y,mk.z].map(v=>v.toFixed(2)).join(','));res.push('at marker '+hp0+' -> '+g.PARTS[cat].hp);
+// far from marker: scan for a voxel of same cat > .6 away
+let q=null;for(let x=-1;x<=1&&!q;x+=.004)for(let y=-.6;y<=.6;y+=.004){const h=C.pickHit(x,y).best;if(h&&h.kind=='knight'&&h.g===g&&g.K.cat[h.i]==cat){const dx=h.p.x-mk.x,dy=h.p.y-mk.y,dz=h.p.z-mk.z;if(dx*dx+dy*dy>.4*.4*g.rel*g.rel){q=[x,y];break;}}}
+const h2=g.PARTS[cat].hp;if(q){C.resolveShot(q[0],q[1],1,0,false,1);res.push('away '+h2+' -> '+g.PARTS[cat].hp);}else res.push('no far point');
+document.title='done:'+res.join(' ; ');},3000);</script>
