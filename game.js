@@ -236,13 +236,13 @@ for (let i = 0; i < nt; i++) { const side = R() < .5 ? -1 : 1; const z = -3 - R(
 // ---------- 수호자들 (기사, 야만전사, 마법사) ----------
 const GTYPES = {
   knight: { go: 1, gb: 1, name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
-  barbarian: { go: 1.2, gb: 0.8, name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
+  barbarian: { go: 1.2, gl: 6, gb: 0.8, name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { go: 1, gb: 1, name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  rogue: { go: 1, gb: 0.7, hs: .9, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
-  skelwar: { go: 1, gb: 1, hs: 1.0, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
+  rogue: { go: 1, gl: 8, gb: 0.7, hs: .9, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
+  skelwar: { go: 1, gl: 6, gb: 1, hs: 1.0, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   skelmage: { go: 1, gb: 1, name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  skelrogue: { go: 1, gb: 0.7, hs: .95, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
-  skelminion: { go: 1.3, gb: 0.6, hs: .8, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
+  skelrogue: { go: 1, gl: 8, gb: 0.7, hs: .95, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
+  skelminion: { go: 1.3, gl: 6, gb: 0.6, hs: .8, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
 const SLOTS = [
   { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
   { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
@@ -279,7 +279,8 @@ function makeGuardian(typeKey, slot, idx) {
   const scale = slot.H / ((hgt + 1) * pitch);
   const kpt = pitch * scale * 2;                        // 2x2x2 묶음이므로 복셀 크기 2배
   const rel = kpt / .045;
-  const kv0 = downsample(D.vox.filter(v => v[6] !== 5)).filter(v => v[6] !== 2);
+  const GL = T_.gl || 0;   // 바닥에 깔린 장비를 들어 올림(복셀 단위)
+  const kv0 = downsample(D.vox.filter(v => v[6] !== 5).map(v => (GL && (v[6] === 3 || v[6] === 4)) ? [v[0], v[1] + GL, v[2], v[3], v[4], v[5], v[6]] : v)).filter(v => v[6] !== 2);
   let kcx = 0, kcz = 0; kv0.forEach(v => { kcx += v[0]; kcz += v[2]; }); kcx /= kv0.length; kcz /= kv0.length;
   const K = { n: kv0.length, pt: kpt };
   K.mesh = new THREE.InstancedMesh(box, mat, K.n); K.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); K.mesh.frustumCulled = false;
