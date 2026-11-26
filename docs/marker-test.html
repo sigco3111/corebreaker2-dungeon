@@ -1,0 +1,11 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');const G=location.hash.slice(1)||'knight,barbarian,mage';f.src='../index.html?visit=1&g='+G;
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const res=[];
+for(const g of C.GS){g.gmode='open';g.bob=0;g.off=g.slot.x;
+ for(const cat of Object.keys(g.PARTS)){const seq=[];
+  for(let k=0;k<8&&g.PARTS[cat].alive;k++){const mk=g.marks[cat];const pm=C.projectPoint(mk.x+g.off,mk.y+.04,mk.z+.25);
+   const h=C.pickHit(pm[0],pm[1]).best;const own=h&&h.kind=='knight'&&h.g===g&&g.K.cat[h.i]==cat;
+   seq.push(own?'P':(h?h.kind[0]+(h.g?(h.g===g?'s':'o'):''):'-'));
+   if(own)C.resolveShot(pm[0],pm[1],1,0,false,1);else break;}
+  res.push(g.key+':'+g.PARTS[cat].name+':'+seq.join('')+(g.PARTS[cat].alive?'(alive hp'+g.PARTS[cat].hp+')':'(dead)'));}}
+document.title='done:'+res.join(' | ');},3000);</script>

@@ -370,18 +370,46 @@ function breakPart(g, c) {
   if (ZR.chain) { chainN = chainT > 0 ? chainN + 1 : 1; chainT = 6; if (chainN > 1) { addCoins(15 * (chainN - 1), g.off, g.slot.H * 1.3, g.slot.z + .5); popLabel(`연쇄 x${chainN}! 보너스 +${15 * (chainN - 1)}`, new THREE.Vector3(g.off, g.slot.H * 1.15, g.slot.z + .5)); } }
   if (g.partsBroken === Object.keys(g.PARTS).length) exposeCore(g); else setStatus();
 }
+// 표식을 실제로 맞는 복셀 위로 옮긴다(깎여 나간 구멍 위에 표식이 떠 있으면 명중이 빗나가 버그처럼 느껴짐)
+function relocateMark(g, c) {
+  const m = g.marks && g.marks[c]; if (!m) return; const K = g.K;
+  let sx = 0, sy = 0, sz = 0, n = 0; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { sx += K.pos[i * 3]; sy += K.pos[i * 3 + 1]; sz += K.pos[i * 3 + 2]; n++; }
+  if (!n) return; sx /= n; sy /= n; sz /= n;
+  const cand = []; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { const dx = K.pos[i * 3] - sx, dy = K.pos[i * 3 + 1] - sy, dz = K.pos[i * 3 + 2] - sz; cand.push([dx * dx + dy * dy + dz * dz, i]); }
+  cand.sort((a, b) => a[0] - b[0]);
+  const gb = g.bob || 0, stepN = Math.max(1, Math.floor(cand.length / 200));
+  for (let k = 0; k < cand.length; k += stepN) {
+    const i = cand[k][1], px = K.pos[i * 3], py = K.pos[i * 3 + 1], pz = K.pos[i * 3 + 2];
+    const v = new THREE.Vector3(px + g.off, py + .04 + gb, pz + .25).project(cam); if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) continue;
+    const r = pickHit(v.x, v.y).best;
+    if (r && r.kind === 'knight' && r.g === g && K.cat[r.i] == c) { m.x = px; m.y = py; m.z = pz; return; }
+  }
+  // 후보 복셀이 모두 가려진 경우: 화면에서 이 부위가 실제로 맞는 지점을 격자로 찾는다
+  let x0 = 9, x1 = -9, y0 = 9, y1 = -9;
+  for (const [, i] of cand) { const v = new THREE.Vector3(K.pos[i * 3] + g.off, K.pos[i * 3 + 1] + gb, K.pos[i * 3 + 2]).project(cam); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+  const cv = new THREE.Vector3(sx + g.off, sy + gb, sz).project(cam); let bestD = 1e9, bp = null;
+  for (let a_ = 0; a_ <= 40; a_++) for (let b_ = 0; b_ <= 40; b_++) {
+    const nx = x0 + (x1 - x0) * a_ / 40, ny = y0 + (y1 - y0) * b_ / 40; if (Math.abs(nx) > 1 || Math.abs(ny) > 1) continue;
+    const r = pickHit(nx, ny).best; if (!(r && r.kind === 'knight' && r.g === g && K.cat[r.i] == c)) continue;
+    const d = (nx - cv.x) ** 2 + (ny - cv.y) ** 2; if (d >= bestD) continue;
+    const v = new THREE.Vector3(r.p.x + g.off, r.p.y + .04 + gb, r.p.z + .25).project(cam); const r2 = pickHit(v.x, v.y).best;
+    if (r2 && r2.kind === 'knight' && r2.g === g && K.cat[r2.i] == c) { bestD = d; bp = r.p.clone(); }
+  }
+  if (bp) { m.x = bp.x; m.y = bp.y; m.z = bp.z; return; }
+  m.x = sx; m.y = sy; m.z = sz;
+}
 function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; let crit = 1; { const mk = g.marks && g.marks[c]; if (mk && !h.sg) { const dx = h.p.x - mk.x, dy = h.p.y - mk.y; if (dx * dx + dy * dy < Math.pow(.32 * g.rel, 2)) { crit = 1.5; if (!TEST) popLabel('급소!', new THREE.Vector3(h.p.x + g.off, h.p.y + (g.bob || 0) + .3, h.p.z + .25)); } } } pt.hp -= (h.dmg || 1) * crit * (h.pshot && pt.name === '방패' ? 1.5 : 1) * (h.sg && /모자|두건|지팡이|석궁/.test(pt.name) ? 1.6 : 1);   // 산탄은 천/나무 장비에 1.6배   // 관통탄은 방패 부위에 1.5배 피해 if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
+    const pt = g.PARTS[c]; let crit = 1; { const mk = g.marks && g.marks[c]; if (mk && !h.sg) { const dx = h.p.x - mk.x, dy = h.p.y - mk.y; if (dx * dx + dy * dy < Math.pow(.32 * g.rel, 2)) { crit = 1.5; if (!TEST) popLabel('급소!', new THREE.Vector3(h.p.x + g.off, h.p.y + (g.bob || 0) + .3, h.p.z + .25)); } } } pt.hp -= (h.dmg || 1) * crit * (h.pshot && pt.name === '방패' ? 1.5 : 1) * (h.sg && /모자|두건|지팡이|석궁/.test(pt.name) ? 1.6 : 1); if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
     let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
       if (dx * dx + dy * dy + dz * dz < cr * cr) { K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO); if ((k++ % 2) == 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 5, Math.random() * 4 + 1, Math.random() * 5, g.kpt, 0); }
     }
     K.mesh.instanceMatrix.needsUpdate = true; shake = .15;
-    if (pt.hp <= 0) breakPart(g, c);
+    if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c);
   } else {
     burst(h.wp.x, h.wp.y, h.wp.z, 200, 200, 210, 6, 4, .05);   // 몸통은 코어 전까지 깎이지 않음
     flashText('몸통은 단단하다. 장비를 먼저!');
@@ -468,6 +496,15 @@ function pickHit(nx, ny, t0 = 0) {
     if (g.kstate === 'collapse' || g.kstate === 'done') continue;
     const gb = g.bob || 0; const kr = new THREE.Ray(ray.origin.clone().sub(new THREE.Vector3(g.off, gb, 0)), ray.direction); const h = marchVoxels(g.K, kr);
     if (h && (!best || h.t < best.t)) best = { kind: 'knight', g, ...h, wp: h.p.clone().add(new THREE.Vector3(g.off, gb, 0)) };
+    if (g.kstate === 'guard' && g.marks) for (const c in g.marks) {   // 표식(노란 고리)을 겨누면 그 부위가 맞는다: 조준 보조
+      const m = g.marks[c]; if (!(g.PARTS[c] && g.PARTS[c].alive)) continue;
+      const msp = new THREE.Sphere(new THREE.Vector3(m.x + g.off, m.y + .04 + gb, m.z + .25), .17 * Math.max(.9, g.rel)); const mp = ray.intersectSphere(msp, new THREE.Vector3()); if (!mp) continue;
+      const mt = mp.distanceTo(ray.origin); if (best && best.kind === 'prop' && best.t < mt - .3) continue;
+      let bi = -1, bd = 1e9; const K = g.K; for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) { const dx = K.pos[i * 3] - m.x, dy = K.pos[i * 3 + 1] - m.y, dz = K.pos[i * 3 + 2] - m.z, d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
+      if (bi < 0) continue; if (best && best.kind === 'knight' && best.g === g && K.cat[best.i] == c) continue;
+      const lp = new THREE.Vector3(K.pos[bi * 3], K.pos[bi * 3 + 1], K.pos[bi * 3 + 2]);
+      best = { kind: 'knight', g, t: mt, i: bi, p: lp, wp: lp.clone().add(new THREE.Vector3(g.off, gb, 0)), assist: true };
+    }
     if (g.kstate === 'exposed') { const sp = new THREE.Sphere(g.CORE.clone().add(new THREE.Vector3(g.off, gb, 0)), .42 * Math.max(.9, g.rel)); const pt = ray.intersectSphere(sp, new THREE.Vector3()); if (pt) { const t = pt.distanceTo(ray.origin); if (!best || t < best.t + .05) best = { kind: 'core', g, t, p: pt }; } }
   }
   // 비파괴 구조물(바닥, 좌우 벽, 뒷벽): 닿으면 투사체가 거기서 멈추고 불꽃이 튄다
@@ -695,7 +732,7 @@ if (!TEST) {
   ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}${({ 2: ' · 중장갑 구역', 3: ' · 해골 구역', 6: ' · 해골 구역', 5: ' · 민첩 구역', 7: ' · 민첩 구역', 8: ' · 가운데 ★정예(처치 보상 3배)' })[ZONE] || ''}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
   ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
-  $('go').onclick = () => { ov.style.display = 'none'; started = true; };
+  $('go').onclick = () => { ov.style.display = 'none'; started = true; for (const g of GS) for (const c in g.marks) relocateMark(g, c); };
 }
 
 // ---------- 루프 ----------
