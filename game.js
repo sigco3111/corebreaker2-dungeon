@@ -23,6 +23,10 @@ const THEMES = [
   { n: '창고', p: ['box_stacked', 'crates_stacked', 'box_large', 'box_small', 'barrel_large', 'barrel_small_stack'], fl: 'floor_dirt_large', c: 0xffc080 },
   { n: '무기고', p: ['shelf_large', 'shelf_small', 'crates_stacked', 'box_large', 'keg'], fl: 'floor_tile_large', c: 0xff8a60 }];
 const T = THEMES[(ZONE - 1) % 8];
+const MOVEP = {   // 종류별 이동 패턴(속도 배율, 평균 약 1)
+  rogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5, skelrogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5,
+  knight: () => .85, skelwar: () => .85, skelminion: () => 1.25, barbarian: t => 1 + .25 * Math.sin(t * 1.7), mage: t => 1 + .35 * Math.sin(t * .9), skelmage: t => 1 + .35 * Math.sin(t * .9) };
+let hitStop = 0;
 const ZRULES = [
   { t: '장전이 빠르다', rl: .8 }, { t: '코인 +50%, 수호자 약간 빠름', coin: 1.5, spd: 1.1 },
   { t: '게이지가 빨리 찬다', gg: 1.6 }, { t: '수호자가 빠르다', spd: 1.25 },
@@ -336,7 +340,7 @@ function breakPart(g, c) {
     K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO);
     if ((k++ % 3) === 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 8, Math.random() * 6 + 1, Math.random() * 6, g.kpt, 0);
   }
-  K.mesh.instanceMatrix.needsUpdate = true; shake = .35;
+  K.mesh.instanceMatrix.needsUpdate = true; shake = .35; if (!TEST) hitStop = .1;
   { const wp = mk ? new THREE.Vector3(mk.x + g.off, mk.y, mk.z + .25) : new THREE.Vector3(g.off, g.slot.H * .5, g.slot.z + .3);
     popLabel(`${pt.name || '장비'} 파괴!`, wp); burst(wp.x, wp.y, wp.z, 255, 255, 255, 40, 7, .09); burst(wp.x, wp.y, wp.z, 255, 200, 60, 30, 5, .07); }
   addCoins(20, g.off, g.slot.H * 1.1, g.slot.z + .5);
@@ -346,7 +350,7 @@ function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1);
+    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
     let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
@@ -471,7 +475,7 @@ function applyHit(h) {
   }
   if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); }
   else if (h.kind === 'knight') hitKnight(h);
-  else if (h.kind === 'core') collapse(h.g);
+  else if (h.kind === 'core') { if (h.g.kstate === 'exposed') collapse(h.g); }
   else if (h.kind === 'wall') burst(h.p.x, h.p.y, h.p.z, 255, 220, 120, 4, 2, .03);
 }
 const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
@@ -486,14 +490,18 @@ const wCd = w => WEAPONS[w].cd * (1 - .06 * (wLvl(w) - 1));
 const wRad = w => WEAPONS[w].rad * (1 + .1 * (wLvl(w) - 1));
 const wPierce = w => w === 2 ? 2 + (wLvl(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
 const upCost = w => 30 * wLvl(w);
-function resolveShot(nx, ny, mult, pierce, pshot, dmg) {
-  let t0 = 0;
+function collectShot(nx, ny, mult, pierce, pshot, dmg) {   // 발사 순간에 조준점 기준으로 맞는 대상을 확정(표적 태그와 일치)
+  const hits = []; let t0 = 0;
   for (let k = 0; k <= pierce; k++) {
-    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; h.dmg = dmg || 1; if (pshot) h.pshot = true;
-    const stop = applyHit(h); if (stop || h.kind === 'wall' || h.kind === 'core') break;
+    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; h.dmg = dmg || 1; if (pshot) h.pshot = true; hits.push(h);
+    const blocked = (h.kind === 'knight' || h.kind === 'core') && h.g.gmode === 'block' && !pshot;
+    if (blocked || h.kind === 'wall' || h.kind === 'core') break;
     t0 += h.t + .25;
   }
+  return hits;
 }
+function applyShot(hits) { for (const h of hits) { const stop = applyHit(h); if (stop || h.kind === 'wall' || h.kind === 'core') break; } }
+function resolveShot(nx, ny, mult, pierce, pshot, dmg) { applyShot(collectShot(nx, ny, mult, pierce, pshot, dmg)); }
 function selectWeapon(w) { cw = w; proj.material.color.setHex(WEAPONS[w].col); renderBar(); }
 function renderBar() {
   const b = $('bot'); b.innerHTML = '';
@@ -546,7 +554,7 @@ function fire(nx, ny) {
     const target = best ? (best.wp || best.p) : far;
     const dist = ORIGIN.distanceTo(target);
     const spd = cw === 0 ? 60 : cw === 1 ? 34 + Math.random() * 14 : 90;
-    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, n: [ax, ay], mult: cw === 1 ? .62 : wRad(cw), dmg: cw === 1 ? .5 : 1, pierce: wPierce(cw), ps: cw === 2, kind: cw });
+    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, hits: collectShot(ax, ay, cw === 1 ? .62 : wRad(cw), wPierce(cw), cw === 2, cw === 1 ? .5 : 1), kind: cw });
   }
 }
 const GEO = { cap: new THREE.CapsuleGeometry(.06, .34, 4, 8), pel: new THREE.SphereGeometry(.07, 8, 6), spike: new THREE.ConeGeometry(.09, 1.1, 8), trail: new THREE.CylinderGeometry(.03, .005, 1, 6, 1, true) };
@@ -568,7 +576,7 @@ function updateFlying(dt) {
     if (!f.m) { f.m = mkProj(f.kind || 0); DIRV.subVectors(f.to, f.from).normalize(); f.m.quaternion.setFromUnitVectors(UPV, DIRV); }
     f.m.position.lerpVectors(f.from, f.to, u);
     if (f.kind === 1) f.m.position.y -= 0.35 * u * u * 0.4;
-    if (u >= 1) { if (f.n) resolveShot(f.n[0], f.n[1], f.mult, f.pierce, f.ps, f.dmg); else if (f.hit) applyHit(f.hit); sc.remove(f.m); flying.splice(i, 1); }
+    if (u >= 1) { if (f.hits) applyShot(f.hits); else if (f.hit) applyHit(f.hit); sc.remove(f.m); flying.splice(i, 1); }
   }
   proj.visible = false;
 }
@@ -606,7 +614,7 @@ function updateGuardian(g, dt) {
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
   const sp = g.gmode === 'open' ? 1 : g.gmode === 'warn' ? .35 : 0;
-  g.ph += dt * D_SPEED * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
+  g.mt = (g.mt || 0) + dt; const mv = MOVEP[g.key] ? MOVEP[g.key](g.mt + g.slot.x) : 1; g.ph += dt * D_SPEED * mv * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
   { const tb = Math.abs(Math.sin(g.ph * 5)) * .11 * sp; g.bob = (g.bob || 0) + (tb - (g.bob || 0)) * Math.min(1, dt * 14); }
   g.K.mesh.position.set(g.off, g.bob, 0); for (const c in g.marks) { const m = g.marks[c]; m.sp.position.set(m.x + g.off, m.y + .04 + g.bob, m.z + .25); m.sp.material.opacity = g.gmode === 'block' ? .25 : .55 + .35 * Math.sin(g.age * 6); m.sp.scale.setScalar(.3 + .04 * Math.sin(g.age * 6)); } g.sh.position.x = g.off; g.aura.position.x = g.off;
   if (g.coreMesh) { g.coreMesh.position.set(g.off, g.bob, 0); g.coreMesh.userData.light.position.set(g.CORE.x + g.off, g.CORE.y + .2 + g.bob, g.CORE.z + 1.2); }
@@ -672,7 +680,7 @@ function update(dt) {
   for (const g of GS) { if (MOVE && started && (g.kstate === 'guard' || g.kstate === 'exposed')) updateGuardian(g, dt); if (g.kstate === 'collapse') updateCollapse(g, dt); if (g.coreMesh && g.kstate === 'exposed') { const p = 1 + Math.sin(performance.now() / 160) * .06; g.coreMesh.scale.setScalar(p); } }
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.6); cam.position.set(shakeBase.x + (Math.random() - .5) * shake * .25, shakeBase.y + (Math.random() - .5) * shake * .2, shakeBase.z); } else cam.position.copy(shakeBase);
 }
-function frame() { const now = performance.now(); const dt = Math.min(.05, (now - last) / 1000); last = now; update(dt); renderer.render(sc, cam); requestAnimationFrame(frame); }
+function frame() { const now = performance.now(); let dt = Math.min(.05, (now - last) / 1000); last = now; if (hitStop > 0) { hitStop -= dt; dt *= .12; } update(dt); renderer.render(sc, cam); requestAnimationFrame(frame); }
 
 // ---------- 테스트 진행(화면 확인용, 시간 시뮬레이션) ----------
 function aimAt(p) { const v = p.clone().project(cam); fire(v.x, v.y); }
