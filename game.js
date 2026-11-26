@@ -14,6 +14,7 @@ if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
 const ZONE = +(q.get('zone') || save.zone || 2);
 const nextZone = z => z % 8 + 1;
 const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
+const SUPA = Object.assign({}, save.sup);
 
 const THEMES = [
   { n: '술창고', p: ['barrel_large', 'barrel_small', 'barrel_small_stack', 'keg', 'bottle_A_green', 'bottle_B_brown', 'box_small'], fl: 'floor_dirt_large', c: 0xffb060 },
@@ -151,8 +152,9 @@ function marchVoxels(e, r) {  // returns {t,p,i} or null
 }
 
 let totalCoins = 0, propsBroken = 0, shots = 0, hitsLanded = 0;
+const COIN_SCALE = .6;   // 수입 하향(사용자 07:48 요청): 소모처가 금방 끝나지 않도록
 function addCoins(n, wx, wy, wz) {
-  n = Math.round(n * (ZR.coin || 1));
+  n = Math.round(n * (ZR.coin || 1) * COIN_SCALE);
   totalCoins += n; $('tr').textContent = '코인 ' + totalCoins;
   const v = new THREE.Vector3(wx, wy, wz).project(cam);
   const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+' + n;
@@ -496,8 +498,8 @@ function clearOccluders(fx) {
 if (!SUMMON) clearOccluders(false);
 let TOTAL_PROPS = props.length; let autoCleared = 0;
 // ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
-const SG_NEED = Math.max(8, Math.ceil(TOTAL_PROPS * .45)); let sgVal = 0;
-const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:9.5vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
+const SG_NEED = Math.max(8, Math.ceil(TOTAL_PROPS * .45)); let sgVal = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0;
+const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:15vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
 sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
 function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.min(sgVal, SG_NEED)}/${SG_NEED}`; }
 if (SUMMON) {
@@ -556,8 +558,10 @@ const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }, { n: 4, rl:
 const SUPPLIES = [   // 코인을 늘리는 품목은 두지 않는다(자동 이득이 되면 소모처가 아님). 전투·편의용 선택 보급만.
   { id: 'rl', n: '급속 장전', e: '장전 -40%', p: 120 },
   { id: 'mag', n: '확장 탄창', e: '탄창 +25%', p: 150 },
-  { id: 'pierce', n: '관통 충전', e: '관통탄 게이지 50% 시작', p: 100 }];
-const SUPA = Object.assign({}, save.sup);
+  { id: 'pierce', n: '관통 충전', e: '관통탄 게이지 50% 시작', p: 100 },
+  { id: 'bolt', n: '번개 증폭', e: '연쇄탄 번개 +2회', p: 120 },
+  { id: 'blast', n: '폭발 증폭', e: '폭발탄 반경 +25%', p: 120 },
+  { id: 'sg', n: '소환 가속', e: '소환 게이지 25% 시작', p: 140 }];
 const magBase = w => { const L = (save.wl[w] || 1); const b = MAG[w].n; return w === 0 ? b + (L >= 7 ? 2 : 0) + (L >= 10 ? 2 : 0) : w === 1 ? b + (L >= 7 ? 1 : 0) + (L >= 10 ? 2 : 0) : w === 2 ? b + (L >= 4 ? 1 : 0) + (L >= 8 ? 1 : 0) : w === 3 ? b + (L >= 10 ? 1 : 0) : b + (L >= 10 ? 2 : 0); };
 const magN = w => { const m = magBase(w); return SUPA.mag && w !== 2 ? m + Math.max(1, Math.round(m * .25)) : m; };
 const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = SUPA.pierce ? 50 : 0; const GAUGE_MAX = 100;
@@ -578,23 +582,42 @@ function applyHit(h) {
   else if (h.kind === 'knight') { if (!TEST) { const q = h.wp || h.p; burst(q.x, q.y, q.z, 255, 235, 150, 6, 3.5, .04); } hitKnight(h); }
   else if (h.kind === 'core') { if (h.g.kstate === 'exposed') collapse(h.g); }
   else if (h.kind === 'wall') burst(h.p.x, h.p.y, h.p.z, 255, 220, 120, 4, 2, .03);
+  if (h.wt === 4 && h.kind !== 'prop' && (h.kind === 'knight' || h.kind === 'core')) chainProps({ p: h.p.clone(), e: null });
   if (h.wt === 3 && (h.kind === 'prop' || h.kind === 'knight' || h.kind === 'wall')) blast(h.wp || h.p);
 }
 // 폭발탄: 착탄 지점 주변 소품을 한꺼번에 부수고, 수호자 장비에는 약한 피해(방어 중이면 제외)
 function blast(p) {
-  const R = 1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0);
+  const R = (1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0)) * (SUPA.blast ? 1.25 : 1);
   shockwave(p); burst(p.x, p.y, p.z, 255, 150, 40, 24, 7, .09); shake = Math.max(shake, .2); sfx('block');
   for (const e of props.slice()) { if (e.dead) continue; const c = e.bb.clone().expandByScalar(R); if (!c.containsPoint(p)) continue; damageProp(e, p, R * .75); }
   for (const g of GS) { if (g.kstate !== 'guard' || g.gmode === 'block') continue; const K = g.K, gb = g.bob || 0; let bi = -1, bd = R * R;
     for (let i = 0; i < K.n; i++) { if (!K.alive[i]) continue; const c = K.cat[i]; if (!g.PARTS[c] || !g.PARTS[c].alive) continue; const dx = K.pos[i * 3] + g.off - p.x, dy = K.pos[i * 3 + 1] + gb - p.y, dz = K.pos[i * 3 + 2] - p.z; const d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
     if (bi >= 0) { const c = K.cat[bi], pt = g.PARTS[c]; pt.hp -= .5; if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c); } }
 }
-// 연쇄탄: 맞은 소품 가까이의 다른 소품으로 튀어 피해
+// 연쇄탄(체인 라이트닝): 명중 지점에서 가장 가까운 대상으로 번개가 차례로 이어진다(소품, 수호자 장비). 산탄이 근거리 넓은 탄막이라면 연쇄탄은 방 전체로 이어지는 단일 줄기.
+const bolts = [];
+function boltLine(a, b) {
+  const pts = [], N = 7, d = new THREE.Vector3().subVectors(b, a), len = d.length() || 1; const jit = Math.min(.35, len * .12);
+  for (let k = 0; k <= N; k++) { const t = k / N, p = new THREE.Vector3().copy(a).addScaledVector(d, t); if (k && k < N) p.add(new THREE.Vector3((Math.random() - .5) * jit, (Math.random() - .5) * jit, (Math.random() - .5) * jit)); pts.push(p); }
+  for (const col of [0xcbb6ff, 0xffffff]) { const m = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 1, depthTest: false, blending: THREE.AdditiveBlending }); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m); l.renderOrder = 9; sc.add(l); bolts.push({ l, m, t: .3 }); }
+}
+function updBolts(dt) { for (let k = bolts.length - 1; k >= 0; k--) { const b = bolts[k]; b.t -= dt; b.m.opacity = Math.max(0, b.t / .3); if (b.t <= 0) { sc.remove(b.l); b.l.geometry.dispose(); b.m.dispose(); bolts.splice(k, 1); } } }
+function chainTargets() {
+  const out = [];
+  for (const e of props) { if (e.dead) continue; out.push({ k: 'prop', e, pos: e.bb.getCenter(new THREE.Vector3()) }); }
+  for (const g of GS) { if (g.kstate !== 'guard' || g.gmode === 'block') continue; for (const c in g.marks) { const m = g.marks[c]; if (!g.PARTS[c] || !g.PARTS[c].alive) continue; out.push({ k: 'part', g, c, pos: new THREE.Vector3(m.x + g.off, m.y + (g.bob || 0), m.z) }); } }
+  return out;
+}
 function chainProps(h) {
-  const n = 2 + Math.floor((effLv(4) - 1) / 3) + (wLvl(4) >= 7 ? 1 : 0); const near = [];
-  for (const e of props) { if (e.dead || e === h.e) continue; const c = e.bb.getCenter(new THREE.Vector3()); const d = c.distanceTo(h.p); if (d < 2.8) near.push([d, e, c]); }
-  near.sort((a, b) => a[0] - b[0]);
-  for (const [, e, c] of near.slice(0, n)) { burst(c.x, c.y, c.z, 190, 160, 255, 8, 4, .05); const i = lookupVoxel(e, c, 2); const pp = i >= 0 ? new THREE.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]) : c; damageProp(e, pp, .7); }
+  const n = 3 + Math.floor((effLv(4) - 1) / 2) + (wLvl(4) >= 7 ? 2 : 0) + (SUPA.bolt ? 2 : 0), RNG = 3.4;
+  const cand = chainTargets(); let cur = h.p.clone(), used = new Set(); if (h.e) used.add(h.e);
+  for (let k = 0; k < n; k++) {
+    let best = null, bd = RNG; for (const t of cand) { if (used.has(t) || (t.k === 'prop' && used.has(t.e))) continue; const d = t.pos.distanceTo(cur); if (d < bd) { bd = d; best = t; } }
+    if (!best) break; used.add(best); boltLine(cur, best.pos); cur = best.pos.clone();
+    burst(cur.x, cur.y, cur.z, 200, 180, 255, 10, 4, .05);
+    if (best.k === 'prop') { const e = best.e; const i = lookupVoxel(e, cur, 2); const pp = i >= 0 ? new THREE.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]) : cur; damageProp(e, pp, .4); }
+    else { const pt = best.g.PARTS[best.c]; if (pt && pt.alive) { pt.hp -= .5; if (pt.hp <= 0) breakPart(best.g, best.c); else relocateMark(best.g, best.c); } }
+  }
 }
 
 const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
@@ -604,8 +627,8 @@ const WEAPONS = [
   { n: '산탄', d: '약한 파편 9발이 넓게 퍼짐·근거리 강함, 모자·지팡이·석궁에 1.6배, 6발 소진 시 장전', cd: .6, rad: 1.0, pierce: 0, col: 0xff7a4a },
   { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 방패 장비에 1.5배, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff },
   { n: '폭발탄', d: '착탄 지점이 폭발: 반경 안의 소품을 한꺼번에 부수고 수호자 장비에 약한 피해. 4발, 느린 연사 (대량 파괴)', cd: .9, rad: 1, pierce: 0, col: 0xff5030, unlock: 400 },
-  { n: '연쇄탄', d: '소품에 맞으면 가까운 소품으로 튀어 피해를 줌(2회~). 6발 (연쇄 파괴)', cd: .5, rad: 1, pierce: 0, col: 0xa27bff, unlock: 600 }];
-const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 +2', 'Lv7 게이지 획득 +25% · Lv8 탄창 +1', 'Lv7 폭발 반경 +15% · Lv10 탄창 +1', 'Lv7 튀는 횟수 +1 · Lv10 탄창 +2'];
+  { n: '연쇄탄', d: '체인 라이트닝: 명중 지점에서 가까운 소품·수호자 장비로 번개가 이어짐(3회~, 사거리 길게). 6발', cd: .5, rad: 1, pierce: 0, col: 0xa27bff, unlock: 600 }];
+const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 +2', 'Lv7 게이지 획득 +25% · Lv8 탄창 +1', 'Lv7 폭발 반경 +15% · Lv10 탄창 +1', 'Lv7 번개 +2회 · Lv10 탄창 +2'];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
@@ -824,6 +847,7 @@ if (!TEST) {
 let last = performance.now();
 const shakeBase = cam.position.clone();
 function update(dt) {
+  updBolts(dt);
   if (chainT > 0) chainT -= dt; updateShock(dt); updateFlash(dt);
   if (cooldown > 0) cooldown -= dt;
   if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = magN(reloadW); } }
@@ -870,6 +894,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { bolts, frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();

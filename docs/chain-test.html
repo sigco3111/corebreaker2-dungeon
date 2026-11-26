@@ -1,6 +1,9 @@
-<!doctype html><title>run</title><iframe id=f width=800 height=450></iframe><script>
-const Z=location.hash.slice(1)||'4';const f=document.getElementById('f');f.src='../index.html?visit=1&zone='+Z+'&g=knight,barbarian,mage';
-setTimeout(()=>{const C=f.contentWindow.__cb2;const out=[];const cs=[];
-for(const g of C.GS){for(const c of Object.keys(g.PARTS)){if(!g.PARTS[c].alive)continue;const c0=C.coins;C.breakPart(g,+c);cs.push(C.coins-c0);}}
-document.title='done:zone'+Z+' chain='+(C.ZR.chain||0)+' coinsPerBreak='+cs.join(',');},3000);
-</script>
+<!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=3&zone=1&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const T=C.THREE;C.save.wu=[1,1,1,1,1];C.selectWeapon(4);
+const proj=p=>p.clone().project(C.cam);
+function aimProp(){for(const e of C.props){if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return [v.x,v.y];}}return null;}
+const alive0=C.props.filter(e=>!e.dead).length;let maxB=0;
+for(let s=0;s<200;s++){C.update(1/30);const n0=C.flying.length;const a=aimProp();if(a&&s%6===0){C.fire(a[0],a[1]);}maxB=Math.max(maxB,C.bolts.length);if(maxB>=6&&s>40)break;}
+C.bolts.forEach(b=>b.t=999);
+document.title='done:'+JSON.stringify({maxBoltLines:maxB,propsBroken:C.broken,alive0,alive1:C.props.filter(e=>!e.dead).length,coins:C.coins});}catch(e){document.title='err:'+e.message+(e.stack||'').split('\n')[1];}},9000);</script>
