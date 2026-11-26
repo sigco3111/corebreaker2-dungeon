@@ -1,0 +1,11 @@
+<!doctype html><title>run</title><iframe id=f src="../index.html?visit=1&g=knight,barbarian,mage" width=800 height=450></iframe><script>
+const f=document.getElementById('f');
+setTimeout(()=>{const C=f.contentWindow.__cb2;C.selectWeapon(1);const g=C.GS[0];const c=g.CORE;
+const res=[];
+for(const [lbl,x] of [['knight',C.projectPoint(g.off+c.x,c.y,c.z)],['edge',[C.projectPoint(g.off+c.x,c.y,c.z)[0]+.12,C.projectPoint(g.off+c.x,c.y,c.z)[1]]]]){
+ C.update(2.5);const h0=C.hits;const x0=Array.isArray(x[0])?x[0]:x;
+ C.fire(x0[0],x0[1]);const n=C.flying.length;const planned=C.flying.reduce((s,p)=>s+p.hits.length,0);const withHit=C.flying.filter(p=>p.hits.length).length;
+ for(let i=0;i<20;i++)C.update(.05);
+ res.push(lbl+': pellets '+n+' with-target '+withHit+' planned '+planned+' landed '+(C.hits-h0)+' left '+C.flying.length);}
+document.title='done:'+res.join(' | ');},3000);
+</script>
