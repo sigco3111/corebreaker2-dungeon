@@ -5,8 +5,8 @@ f.onload=()=>setTimeout(()=>{ try{
  const d=f.contentDocument, C=f.contentWindow.__cb2; const log=[];
  d.getElementById('go').click(); C.showResult();
  for(let i=0;i<3;i++) d.querySelectorAll('.ms')[0].click();
- for(let i=0;i<5;i++) d.querySelector('.sp').click();
- log.push({ms:C.save.ms,sup:C.save.sup,coins:C.save.coins,led:C.save.led});
+ for(let i=0;i<5;i++) d.querySelector('.sp').click(); d.querySelectorAll('.sp')[1].click(); d.querySelectorAll('.se')[0].click(); d.querySelectorAll('.se')[1].click();
+ log.push({eq:C.save.eq,ms:C.save.ms,sup:C.save.sup,coins:C.save.coins,led:C.save.led});
  if(location.hash!=='#shop') d.querySelector('.recbtn').click(); log.push(d.querySelector('.led')?d.querySelector('.led').innerText:'noled');
  document.title='RES'+JSON.stringify(log);
  }catch(e){document.title='ERR'+e.message+(e.stack||'').slice(0,200)}},3000);

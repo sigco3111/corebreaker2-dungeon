@@ -1,0 +1,20 @@
+<!doctype html><body><script>
+const KEY='cb2.save.v1'; localStorage.setItem(KEY,JSON.stringify({wu:[1,1,1,1,1],sup:{sg:2},eq:{}}));
+const plan=[0,1,0], res=[];
+function runOne(useSup){return new Promise(done=>{
+ const sv=JSON.parse(localStorage.getItem(KEY)); sv.eq=useSup?{sg:1}:{}; localStorage.setItem(KEY,JSON.stringify(sv));
+ const f=document.createElement('iframe');f.width=1266;f.height=585;f.style.border=0;f.src='../index.html?visit=3&zone=2&mode=summon&r='+Math.random();document.body.appendChild(f);
+ f.onload=()=>setTimeout(()=>{const d=f.contentDocument,C=f.contentWindow.__cb2,T=C.THREE;d.getElementById('go').click();
+  const hudStart=d.getElementById('tms').textContent+'|'+d.getElementById('tmb').textContent;
+  const proj=p=>p.clone().project(C.cam);
+  function aimProp(){for(const e of C.props){if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return [v.x,v.y];}}return null;}
+  const ring=(g,c)=>{const m=g.marks[c];return C.projectPoint(m.x+g.off,m.y+.04+(g.bob||0),m.z+.25);};
+  let t=0;for(let step=0;step<30*200;step++){C.update(1/30);t+=1/30;
+   if(C.GS.every(g=>g.kstate==='done'))break;const n0=C.flying.length;
+   if(!C.sg[2]){const a=(step%5===0)?aimProp():null;if(a)C.fire(a[0],a[1]);}
+   else{const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');if(!g||g.gmode==='block')continue;let a=null;if(g.kstate==='exposed'){const p=g.CORE;a=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c)a=ring(g,c);}if(a)C.fire(a[0],a[1]);}}
+  const sv=JSON.parse(localStorage.getItem(KEY));
+  res.push({useSup,hudStart,hudEnd:d.getElementById('tmb').textContent+'|'+d.getElementById('tmd').textContent,el:+C.elapsed.toFixed(1),newRec:C.newRecord,bt2:JSON.stringify(C.bt2),stock:JSON.stringify(sv.sup),eq:JSON.stringify(sv.eq)});
+  f.remove();done();},1500);});}
+(async()=>{try{for(const u of plan)await runOne(u);document.title='RES'+JSON.stringify(res);}catch(e){document.title='ERR'+e.message}})();
+</script>
