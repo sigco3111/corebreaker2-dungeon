@@ -1,0 +1,9 @@
+<!doctype html><body><script>
+const all={rl:3,mag:3,pierce:3,bolt:3,blast:3,sg:3}, eq={rl:1,mag:1,pierce:1,bolt:1,blast:1,sg:1};
+localStorage.setItem('cb2.save.v1', JSON.stringify({coins:99999,wu:[1,1,1,1,1],wl:[10,10,10,10,10],sup:all,eq:eq,md:[1,1,1,1,1],mu:{'0:1':1,'1:1':1,'2:1':1,'3:1':1,'4:1':1},ms:[12,12,12,12,12],bt2:{s2d2:25.47},bestTime:{3:40},hist:[{z:2,v:1,t:30,c:400,a:50}]}));
+const q=new URLSearchParams(location.search);const f=document.createElement('iframe');f.width=q.get('w');f.height=q.get('h');f.style.border=0;document.body.style.margin=0;document.body.style.overflow='hidden';f.src='../index.html?visit=2&zone=2&mode=summon';document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{try{const d=f.contentDocument,C=f.contentWindow.__cb2;d.getElementById('go').click();C.showResult();
+ if(location.hash==='#rec')d.querySelector('.recbtn').click();
+ const b=d.querySelector('#ov .box').getBoundingClientRect();const bx=d.querySelector('#ov .box');
+ document.title='RES'+JSON.stringify({vh:f.height,top:Math.round(b.top),bottom:Math.round(b.bottom),scroll:bx.scrollHeight>bx.clientHeight+1,sh:bx.scrollHeight,ch:bx.clientHeight});}catch(e){document.title='ERR'+e.message}},3000);
+</script>

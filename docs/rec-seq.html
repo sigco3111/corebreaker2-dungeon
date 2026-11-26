@@ -1,5 +1,5 @@
 <!doctype html><body><script>
-const KEY='cb2.save.v1'; localStorage.setItem(KEY,JSON.stringify({wu:[1,1,1,1,1],sup:{sg:2},eq:{}}));
+const KEY='cb2.save.v1'; localStorage.setItem(KEY,JSON.stringify({wu:[1,1,1,1,1],sup:{sg:2},eq:{},bt2:{s2d2:99.9,c2d2:77},bestTime:{2:55},hist:[{z:2,v:1,t:99,c:300,a:40}]}));
 const plan=[0,1,0], res=[];
 function runOne(useSup){return new Promise(done=>{
  const sv=JSON.parse(localStorage.getItem(KEY)); sv.eq=useSup?{sg:1}:{}; localStorage.setItem(KEY,JSON.stringify(sv));
@@ -16,5 +16,6 @@ function runOne(useSup){return new Promise(done=>{
   const sv=JSON.parse(localStorage.getItem(KEY));
   res.push({useSup,hudStart,hudEnd:d.getElementById('tmb').textContent+'|'+d.getElementById('tmd').textContent,el:+C.elapsed.toFixed(1),newRec:C.newRecord,bt2:JSON.stringify(C.bt2),stock:JSON.stringify(sv.sup),eq:JSON.stringify(sv.eq)});
   f.remove();done();},1500);});}
-(async()=>{try{for(const u of plan)await runOne(u);document.title='RES'+JSON.stringify(res);}catch(e){document.title='ERR'+e.message}})();
+function finalView(){return new Promise(done=>{const f=document.createElement('iframe');f.width=844;f.height=390;f.src='../index.html?visit=3&zone=2&mode=summon&r='+Math.random();document.body.appendChild(f);f.onload=()=>setTimeout(()=>{const d=f.contentDocument,C=f.contentWindow.__cb2;d.getElementById('go').click();const hud=d.getElementById('tms').textContent+'|'+d.getElementById('tmb').textContent;C.showResult();d.querySelector('.recbtn').click();res.push({final:hud,old:(d.querySelector('.old')||{}).innerText,rows:[...d.querySelectorAll('.rec table tr')].map(r=>r.innerText.replace(/\s+/g,' ')).join(' / '),best:d.querySelector('.rg').innerText.replace(/\s+/g,' ')});done();},1500);});}
+(async()=>{try{for(const u of plan)await runOne(u);await finalView();document.title='RES'+JSON.stringify(res);}catch(e){document.title='ERR'+e.message}})();
 </script>
