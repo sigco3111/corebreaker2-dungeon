@@ -448,5 +448,5 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { sim, fire, aimAt, props, K, PARTS, get state() { return kstate; }, get coins() { return totalCoins; } };
+window.__cb2 = { cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, K, PARTS, get state() { return kstate; }, get coins() { return totalCoins; } };
 if (TEST) runStage(); else frame();

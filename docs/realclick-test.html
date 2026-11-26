@@ -1,0 +1,20 @@
+<!doctype html><body><iframe id=f src="http://localhost:8765/index.html?visit=3" width=1266 height=585></iframe><script>
+const f=document.getElementById('f'); const log=[];
+f.onload=()=>setTimeout(async()=>{
+ const w=f.contentWindow, d=f.contentDocument; d.getElementById('go').click();
+ await new Promise(r=>setTimeout(r,500));
+ const g=w.__cb2; const cv=d.querySelector('canvas'); const rect=cv.getBoundingClientRect();
+ // nearest props (largest z)
+ const srt=g.props.slice().sort((a,b)=>b.bb.max.z-a.bb.max.z); const near=[...srt.slice(0,3),...srt.slice(-2)];
+ for(const e of near){
+  const mid=Math.floor(e.n/2); const c=new e.bb.min.constructor(e.pos[mid*3],e.pos[mid*3+1],e.pos[mid*3+2]); const v=c.clone().project(g.cam);
+  const x=rect.left+(v.x+1)/2*rect.width, y=rect.top+(1-v.y)/2*rect.height;
+  const h0=g.hits,b0=g.broken; let flew=false, maxFly=0;
+  cv.dispatchEvent(new w.PointerEvent('pointerdown',{clientX:x,clientY:y,bubbles:true}));
+  const f0=g.flying[0]; if(f0) log.push({hit:f0.hit?f0.hit.kind+':'+(f0.hit.e?f0.hit.e.name:''):null,dur:f0.dur,to:f0.to.toArray().map(n=>+n.toFixed(1))}); else log.push('noflight');let fr=0; for(let i=0;i<400;i++){ g.sim(.05); await new Promise(r=>setTimeout(r,2)); maxFly=Math.max(maxFly,g.flying.length); if(maxFly>0&&g.flying.length==0){break;} } for(let k=0;k<10;k++)g.sim(.05);
+  log.push({name:e.name,z:+e.bb.max.z.toFixed(2),sx:Math.round(x),sy:Math.round(y),hitsDelta:g.hits-h0,voxLeft:e.count+'/'+e.total,wasFlying:maxFly>0});
+  for(let k=0;k<30;k++)g.sim(.05);
+ }
+ document.title='RES'+JSON.stringify(log);
+},1500);
+</script>
