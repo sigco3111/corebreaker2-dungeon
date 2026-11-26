@@ -5,8 +5,8 @@ const STAGE = +(q.get('stage') || 0);        // 테스트용: 스크립트 진�
 const TEST = STAGE !== 0;
 const ZONE = +(q.get('zone') || 2);
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {} });
-function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; return o; } catch (e) { return SAVE_DEF(); } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {}, shots: 0, hits: 0, hist: [] });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 const VISIT = +(q.get('visit') || ((save.visits[ZONE] || 0) + 1));
@@ -191,6 +191,8 @@ const SLOTS = [
   { x: 3.0, z: -6.5, H: 2.0, amp: .4, per: 4.2, gopen: 2.0, gblock: 1.1 }];
 const GOKEYS = ['knight', 'barbarian', 'mage'];
 const GWARN = .5;
+const DIFF = Math.min(7, Math.max(0, VISIT - 1));
+const D_BLOCK = 1 + .08 * DIFF, D_OPEN = Math.max(.7, 1 - .04 * DIFF), D_SPEED = 1 + .05 * DIFF;
 const GS = [];
 const kcolor = new THREE.Color();
 function downsample(vox) {   // 2x2x2 묶음: 부위(장비)가 있으면 그 부위가 우선
@@ -437,9 +439,15 @@ function renderBar() {
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/5</span></div><div class="cd">${W.d}</div>` + (L >= 5 ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/5</span></div><div class="cd">${W.d}</div>` + (L >= 5 ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
-function bindShop(box) { box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < 5) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); }
+function recHTML() {
+  const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
+  const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.v}번째</td><td>${h.t}초</td><td>${h.a}%</td><td>${h.c}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
+  return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
+}
+function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
+function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < 5) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   cooldown = TEST ? 0 : wCd(cw); shots++;
@@ -484,19 +492,19 @@ function updateCollapse(g, dt) {
 }
 function updateGuardian(g, dt) {
   g.gT += dt;
-  const gopen = g.slot.gopen, gblock = g.slot.gblock;
+  const gopen = g.slot.gopen * D_OPEN, gblock = g.slot.gblock * D_BLOCK;
   if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; }
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
   const sp = g.gmode === 'open' ? 1 : g.gmode === 'warn' ? .35 : 0;
-  g.ph += dt * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
+  g.ph += dt * D_SPEED * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
   g.K.mesh.position.x = g.off; g.sh.position.x = g.off; g.aura.position.x = g.off;
   if (g.coreMesh) { g.coreMesh.position.x = g.off; g.coreMesh.userData.light.position.x = g.CORE.x + g.off; }
   g.aura.material.opacity = g.gmode === 'block' ? .28 : g.gmode === 'warn' ? .1 + .08 * Math.sin(g.gT * 40) : 0;
 }
 const t0 = performance.now(); let elapsed = 0;
 function showResult() {
-  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT;
+  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; save.shots += shots; save.hits += hitsLanded; save.hist.push({ v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
   const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed);
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
@@ -555,7 +563,7 @@ function runStage() {
   }
   if (STAGE >= 2) {
     info.parts = 0;
-    for (const g of GS) for (const c of [1, 4, 3]) { for (let k = 0; k < 30 && g.PARTS[c].alive; k++) { if (!aimFor(r => r.kind === 'knight' && r.g === g && g.K.cat[r.i] == c, g.K)) { info.unreachable.push(g.name + ':part' + c); break; } sim(.05); } }
+    for (const g of GS) for (const c of [1, 4, 3]) { for (let k = 0, w = 0; k < 400 && g.PARTS[c].alive; k++) { if (!aimFor(r => r.kind === 'knight' && r.g === g && g.K.cat[r.i] == c, g.K)) { if (++w > 200) { info.unreachable.push(g.name + ':part' + c + ':hp' + g.PARTS[c].hp + ':' + g.gmode + ':' + g.kstate); break; } sim(.1); continue; } sim(.05); } }
     sim(.5); info.guardians = GS.map(g => g.name + ':' + g.kstate + ':' + g.partsBroken);
   }
   if (STAGE >= 3) { for (const g of GS) if (g.kstate === 'exposed') { aimAt(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0))); sim(.1); } sim(STAGE === 3 ? .45 : STAGE === 4 ? 1.4 : 5); info.guardians = GS.map(g => g.name + ':' + g.kstate); }

@@ -1,0 +1,6 @@
+<!doctype html><body style="margin:0;overflow:hidden"><script>
+const q=new URLSearchParams(location.search);
+localStorage.setItem('cb2.save.v1', JSON.stringify({plays:5,clears:5,coins:140,props:38,shots:200,hits:151,bestTime:{2:41},visits:{2:5},hist:[{v:1,t:62,c:130,a:70},{v:2,t:55,c:110,a:74},{v:3,t:48,c:120,a:77},{v:4,t:41,c:100,a:78}],wl:[1,2,1],dex:{chest:3}}));
+const f=document.createElement('iframe'); f.width=q.get('w')||1266; f.height=q.get('h')||585; f.style.border=0; f.src='http://localhost:8765/index.html?visit=6'; document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{f.contentDocument.querySelector('.recbtn').click();document.title='RES'+f.contentDocument.querySelector('.recwrap').innerText.length},1200);
+</script>
