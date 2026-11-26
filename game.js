@@ -239,6 +239,8 @@ function downsample(vox) {   // 2x2x2 묶음: 부위(장비)가 있으면 그 �
   }
   return out;
 }
+// 장비 위치 표시(조준 보조): 남은 장비 위에 맥동하는 노란 고리
+const MARK_TEX = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.strokeStyle = '#ffe14a'; x.lineWidth = 6; x.beginPath(); x.arc(32, 32, 22, 0, 7); x.stroke(); x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 2; x.beginPath(); x.arc(32, 32, 14, 0, 7); x.stroke(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 function makeGuardian(typeKey, slot, idx) {
   const T_ = GTYPES[typeKey], D = T_.d;
   slot = Object.assign({}, slot, { H: slot.H * (T_.hs || 1) });   // 종류별 크기 보정(겹침 방지)
@@ -269,6 +271,9 @@ function makeGuardian(typeKey, slot, idx) {
   const aura = new THREE.Mesh(new THREE.BoxGeometry(slot.H * .75, slot.H * 1.12, slot.H * .5), new THREE.MeshBasicMaterial({ color: 0x66aaff, transparent: true, opacity: 0, depthWrite: false }));
   aura.position.set(slot.x, slot.H * .55, slot.z); sc.add(aura);
   const g = { idx, key: typeKey, name: T_.name, slot, K, PARTS, CORE, rel, kpt, kstate: 'guard', partsBroken: 0, off: slot.x, ph: Math.random() * 6.28, gmode: 'open', gT: Math.random() * 1.5, coreMesh: null, collapseT: 0, kv: new Float32Array(K.n * 3), sh, aura };
+  g.marks = {};
+  for (const c in PARTS) { let sx = 0, sy = 0, sz = 0, n = 0; for (let i = 0; i < K.n; i++) if (K.cat[i] == c) { sx += K.pos[i * 3]; sy += K.pos[i * 3 + 1]; sz += K.pos[i * 3 + 2]; n++; } if (!n) continue;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: MARK_TEX, transparent: true, depthTest: false, opacity: .85 })); sp.renderOrder = 10; sp.scale.setScalar(.34); sp.position.set(sx / n + slot.x, sy / n + .04, sz / n + .25); sc.add(sp); g.marks[c] = { sp, x: sx / n, y: sy / n, z: sz / n }; }
   K.g = g; return g;
 }
 {
@@ -311,6 +316,7 @@ function exposeCore(g) {
   shake = .5;
 }
 function breakPart(g, c) {
+  if (g.marks && g.marks[c]) { sc.remove(g.marks[c].sp); delete g.marks[c]; }
   sfx('part');
   const { K } = g; const pt = g.PARTS[c]; pt.alive = false; g.partsBroken++; let k = 0;
   for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
@@ -500,7 +506,7 @@ function updateFlying(dt) {
 
 // ---------- 붕괴와 결과 ----------
 function collapse(g) {
-  sfx('collapse');
+  sfx('collapse'); for (const c in g.marks) { sc.remove(g.marks[c].sp); } g.marks = {};
   const { K, CORE, kv } = g; g.kstate = 'collapse'; g.collapseT = 0; g.aura.material.opacity = 0; setStatus();
   for (let i = 0; i < K.n; i++) {
     if (!K.alive[i]) continue;
@@ -525,14 +531,14 @@ function updateCollapse(g, dt) {
   if (collapseT > 4.4 && g.kstate === 'collapse') { g.kstate = 'done'; if (GS.every(q => q.kstate === 'done')) showResult(); else setStatus(); }
 }
 function updateGuardian(g, dt) {
-  g.gT += dt;
+  g.gT += dt; g.age = (g.age || 0) + dt;
   const gopen = g.slot.gopen * D_OPEN, gblock = g.slot.gblock * D_BLOCK;
   if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; sfx('warn'); }
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
   const sp = g.gmode === 'open' ? 1 : g.gmode === 'warn' ? .35 : 0;
   g.ph += dt * D_SPEED * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
-  g.K.mesh.position.x = g.off; g.sh.position.x = g.off; g.aura.position.x = g.off;
+  g.K.mesh.position.x = g.off; for (const c in g.marks) { const m = g.marks[c]; m.sp.position.set(m.x + g.off, m.y + .04, m.z + .25); m.sp.material.opacity = g.gmode === 'block' ? .25 : .55 + .35 * Math.sin(g.age * 6); m.sp.scale.setScalar(.3 + .04 * Math.sin(g.age * 6)); } g.sh.position.x = g.off; g.aura.position.x = g.off;
   if (g.coreMesh) { g.coreMesh.position.x = g.off; g.coreMesh.userData.light.position.x = g.CORE.x + g.off; }
   g.aura.material.opacity = g.gmode === 'block' ? .28 : g.gmode === 'warn' ? .1 + .08 * Math.sin(g.gT * 40) : 0;
 }
