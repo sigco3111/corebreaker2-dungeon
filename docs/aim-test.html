@@ -1,0 +1,6 @@
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage';
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;const g=C.GS[1];
+let found=null;for(let x=-1;x<=1&&!found;x+=.01)for(let y=-.6;y<=.6;y+=.01){const h=C.pickHit(x,y).best;if(h&&h.kind=='knight'&&h.g===g&&g.PARTS[g.K.cat[h.i]]&&g.PARTS[g.K.cat[h.i]].alive){found=[x,y];break;}}
+const r=d.querySelector('canvas').getBoundingClientRect();const ev=new w.PointerEvent('pointermove',{clientX:r.left+(found[0]*.5+.5)*r.width,clientY:r.top+(-found[1]*.5+.5)*r.height,bubbles:true});
+d.querySelector('canvas').dispatchEvent(ev);document.title='tag='+d.getElementById('cross').textContent+' color='+d.getElementById('cross').style.borderColor;},2500);</script>

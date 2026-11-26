@@ -620,7 +620,19 @@ function showResult() {
 // ---------- 입력 ----------
 const cross = $('cross');
 function ndc(e) { const r = canvas.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; }
-function moveCross(e) { const [, , px, py] = ndc(e); cross.style.left = (px * 100) + '%'; cross.style.top = (py * 100) + '%'; }
+let crossTag = null;
+function aimInfo(nx, ny) {
+  const h = pickHit(nx, ny).best; if (!h) return null;
+  if (h.kind === 'core') return h.g.gmode === 'block' ? ['#6ab0ff', '방어중'] : ['#ff5a5a', '코어!'];
+  if (h.kind === 'knight') { const c = h.g.K.cat[h.i], P = h.g.PARTS[c]; if (P && P.alive) return h.g.gmode === 'block' ? ['#6ab0ff', '방어중'] : ['#5aff7a', P.name]; return ['#aaaaaa', '몸통(단단)']; }
+  return null;
+}
+function moveCross(e) {
+  const [nx, ny, px, py] = ndc(e); cross.style.left = (px * 100) + '%'; cross.style.top = (py * 100) + '%';
+  if (!crossTag) { crossTag = document.createElement('div'); crossTag.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:.4vmin;white-space:nowrap;font-size:2vmin;font-weight:800;text-shadow:0 1px 3px #000'; cross.appendChild(crossTag); }
+  const a = aimInfo(nx, ny);
+  cross.style.borderColor = a ? a[0] : '#fff'; crossTag.style.color = a ? a[0] : '#fff'; crossTag.textContent = a ? a[1] : '';
+}
 canvas.addEventListener('pointermove', moveCross);
 canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) return; moveCross(e); const [nx, ny] = ndc(e); fire(nx, ny); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
