@@ -47,7 +47,7 @@ sc.add(new THREE.HemisphereLight(0xb8b0d0, 0x3a3040, 1.15));
 const dl = new THREE.DirectionalLight(0xfff0d8, 1.4); dl.position.set(2, 6, 4); sc.add(dl);
 
 // ---------- 데이터 ----------
-const [P, KD, GB, GM] = await Promise.all([fetch('props.json').then(r => r.json()), fetch('knight_demo.json').then(r => r.json()), fetch('guardians/barbarian.json').then(r => r.json()), fetch('guardians/mage.json').then(r => r.json())]);
+const [P, KD, GB, GM, GR] = await Promise.all([fetch('props.json').then(r => r.json()), fetch('knight_demo.json').then(r => r.json()), fetch('guardians/barbarian.json').then(r => r.json()), fetch('guardians/mage.json').then(r => r.json()), fetch('guardians/rogue.json').then(r => r.json())]);
 const box = new THREE.BoxGeometry(1, 1, 1);
 const mat = new THREE.MeshLambertMaterial();
 const col = new THREE.Color(), O = new THREE.Object3D();
@@ -184,12 +184,13 @@ for (let i = 0; i < nt; i++) { const side = R() < .5 ? -1 : 1; const z = -3 - R(
 const GTYPES = {
   knight: { name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
-  mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } } };
+  mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } },
+  rogue: { name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } } };
 const SLOTS = [
   { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
   { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
   { x: 3.0, z: -6.5, H: 2.0, amp: .4, per: 4.2, gopen: 2.0, gblock: 1.1 }];
-const GOKEYS = ['knight', 'barbarian', 'mage'];
+const GOKEYS = ['knight', 'barbarian', 'mage', 'rogue'];
 const GWARN = .5;
 const DIFF = Math.min(7, Math.max(0, VISIT - 1));
 const D_BLOCK = 1 + .08 * DIFF, D_OPEN = Math.max(.7, 1 - .04 * DIFF), D_SPEED = 1 + .05 * DIFF;
@@ -244,8 +245,8 @@ function makeGuardian(typeKey, slot, idx) {
 }
 {
   const keys = []; // 방문마다 구성이 바뀜: 기사/야만전사/마법사를 섞어서 3체
-  for (let i = 0; i < 3; i++) keys.push(GOKEYS[Math.floor(R() * 3)]);
-  if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % 3];   // 최소 2종류
+  for (let i = 0; i < 3; i++) keys.push(GOKEYS[Math.floor(R() * GOKEYS.length)]);
+  if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
   keys.forEach((k, i) => GS.push(makeGuardian(k, slots[i], i)));
 }
@@ -253,7 +254,7 @@ let KOFF = 0;   // (호환용) 사용 안 함
 const MOVE = !TEST || q.get('move') === '1';
 let flashT = 0, deflects = 0;
 function gStatus(g) {
-  if (g.kstate === 'guard') return `${g.name} 장비 ${g.partsBroken}/3`;
+  if (g.kstate === 'guard') return `${g.name} 장비 ${g.partsBroken}/${Object.keys(g.PARTS).length}`;
   if (g.kstate === 'exposed') return `${g.name} <span style="color:#7ff">코어 노출!</span>`;
   return `${g.name} 처치`;
 }
@@ -286,7 +287,7 @@ function breakPart(g, c) {
   }
   K.mesh.instanceMatrix.needsUpdate = true; shake = .35;
   addCoins(20, g.off, g.slot.H * 1.1, g.slot.z + .5);
-  if (g.partsBroken === 3) exposeCore(g); else setStatus();
+  if (g.partsBroken === Object.keys(g.PARTS).length) exposeCore(g); else setStatus();
 }
 function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
@@ -563,7 +564,7 @@ function runStage() {
   }
   if (STAGE >= 2) {
     info.parts = 0;
-    for (const g of GS) for (const c of [1, 4, 3]) { for (let k = 0, w = 0; k < 400 && g.PARTS[c].alive; k++) { if (!aimFor(r => r.kind === 'knight' && r.g === g && g.K.cat[r.i] == c, g.K)) { if (++w > 200) { info.unreachable.push(g.name + ':part' + c + ':hp' + g.PARTS[c].hp + ':' + g.gmode + ':' + g.kstate); break; } sim(.1); continue; } sim(.05); } }
+    for (const g of GS) for (const c of [1, 4, 3].filter(c => g.PARTS[c])) { for (let k = 0, w = 0; k < 400 && g.PARTS[c].alive; k++) { if (!aimFor(r => r.kind === 'knight' && r.g === g && g.K.cat[r.i] == c, g.K)) { if (++w > 200) { info.unreachable.push(g.name + ':part' + c + ':hp' + g.PARTS[c].hp + ':' + g.gmode + ':' + g.kstate); break; } sim(.1); continue; } sim(.05); } }
     sim(.5); info.guardians = GS.map(g => g.name + ':' + g.kstate + ':' + g.partsBroken);
   }
   if (STAGE >= 3) { for (const g of GS) if (g.kstate === 'exposed') { aimAt(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0))); sim(.1); } sim(STAGE === 3 ? .45 : STAGE === 4 ? 1.4 : 5); info.guardians = GS.map(g => g.name + ':' + g.kstate); }

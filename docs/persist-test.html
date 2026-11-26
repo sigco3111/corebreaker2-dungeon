@@ -1,0 +1,33 @@
+<!doctype html><body style="margin:0"><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const KEY='cb2.save.v1', f=document.getElementById('f'); const log=[]; let phase=0;
+if(!sessionStorage.p){ localStorage.setItem(KEY,JSON.stringify({coins:200,wl:[1,2,1],dex:{chest:3},props:10,plays:2,clears:2,shots:50,hits:30,visits:{2:2},bestTime:{2:70},hist:[{v:1,t:80,c:100,a:60},{v:2,t:70,c:90,a:62}]})); sessionStorage.p='1'; }
+f.src='http://localhost:8765/index.html';
+f.onload=()=>setTimeout(async()=>{ try{ await run(); }catch(e){document.title='ERR'+e.message+JSON.stringify(log)+f.contentWindow.__cb2.GS.map(g=>g.kstate+':'+g.gmode)+f.contentDocument.getElementById('ov').style.display+(e.stack||'').slice(0,200)} },1500);
+async function run(){
+ const w=f.contentWindow,d=f.contentDocument,g=w.__cb2;
+ if(!d.getElementById('go')&&!d.getElementById('again')) return;
+ phase++; document.title='P'+phase; window.onerror=(m)=>{document.title='ERR'+m};
+ if(phase===1){
+  log.push({start_visit:d.querySelector('#ov p').innerText.slice(0,20),save0:JSON.parse(localStorage.getItem(KEY)).coins});
+  d.getElementById('go').click(); await new Promise(r=>setTimeout(r,300));
+  const cv=d.querySelector('canvas'),rc=cv.getBoundingClientRect();
+  for(let i=0;i<4000&&d.getElementById('again')==null;i++){
+    let best=null;
+    for(const st of [.06,.02]){ for(let ix=-.9;ix<=.9&&!best;ix+=st)for(let iy=-.5;iy<=.6&&!best;iy+=st){const h=g.pickHit(ix,iy).best; if(h&&h.kind!=='wall'&&!(h.g&&h.g.gmode==='block')&&(h.kind==='core'||(h.kind==='knight'&&[1,3,4].includes(+h.g.K.cat[h.i]))||(h.kind==='prop'&&i%4===0)))best=[ix,iy];} if(best)break; }
+    if(best){const x=rc.left+(best[0]+1)/2*rc.width,y=rc.top+(1-best[1])/2*rc.height;cv.dispatchEvent(new w.PointerEvent('pointerdown',{clientX:x,clientY:y,bubbles:true}));}
+    for(let k=0;k<4;k++)g.sim(.05);
+  }
+  g.sim(3);
+  const s=JSON.parse(localStorage.getItem(KEY));
+  log.push({cleared:!!d.getElementById('again'),saved:{coins:s.coins,wl:s.wl,dex:s.dex,plays:s.plays,clears:s.clears,visits:s.visits,hist:s.hist.length,last:s.hist[s.hist.length-1],bestTime:s.bestTime}});
+  sessionStorage.log=JSON.stringify(log);
+  d.getElementById('again').click();
+ } else if(phase===2){
+  const s=JSON.parse(localStorage.getItem(KEY));
+  d.querySelector('.recbtn').click();
+  log.push(...JSON.parse(sessionStorage.log));
+  log.push({after_reload:{visit:null,coins:s.coins,wl:s.wl,dex:s.dex},records:d.querySelector('.recwrap').innerText.replace(/\n/g,' ')});
+  document.title='RES'+JSON.stringify(log);
+ }
+}
+</script>
