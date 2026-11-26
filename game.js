@@ -268,7 +268,8 @@ function makeGuardian(typeKey, slot, idx) {
 }
 {
   const keys = []; // 방문마다 구성이 바뀜: 기사/야만전사/마법사를 섞어서 3체
-  for (let i = 0; i < 3; i++) keys.push(GOKEYS[Math.floor(R() * GOKEYS.length)]);
+  const SIG = { 1: 'barbarian', 2: 'knight', 3: 'mage', 4: 'knight', 5: 'rogue', 6: 'mage', 7: 'rogue', 8: 'barbarian' }[ZONE];   // 구역별 대표 수호자(약 절반 확률)
+  for (let i = 0; i < 3; i++) keys.push(R() < .5 ? SIG : GOKEYS[Math.floor(R() * GOKEYS.length)]);
   if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
   keys.forEach((k, i) => GS.push(makeGuardian(k, slots[i], i)));
