@@ -6,8 +6,8 @@ const TEST = STAGE !== 0;
 let summoned = false;
 const SUMMON = q.get('mode') === 'summon' || (!TEST && q.get('mode') !== 'classic'); summoned = !SUMMON;   // 새 루프: 정지 소품 파괴 -> 소환 게이지 -> 수호자 무리
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
-function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, bt2: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!o.bt2) o.bt2 = {}; if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
@@ -736,14 +736,30 @@ function updateGuardian(g, dt) {
   if (g.coreMesh) { g.coreMesh.position.set(g.off, g.bob, 0); g.coreMesh.userData.light.position.set(g.CORE.x + g.off, g.CORE.y + .2 + g.bob, g.CORE.z + 1.2); }
   g.aura.material.opacity = g.gmode === 'block' ? .28 : g.gmode === 'warn' ? .1 + .08 * Math.sin(g.gT * 40) : 0;
 }
-const t0 = performance.now(); let elapsed = 0;
+let elapsed = 0, clockDt = null, killed = false, newRecord = false;
+// ---- 타임어택 HUD: 시작 클릭부터 마지막 수호자를 쓰러뜨리는 순간까지(히트스톱·일시정지 제외, 실제 시간) ----
+const MODEK = SUMMON ? 's' : 'c', BTK = MODEK + ZONE;
+function bestSec() { const v = save.bt2[BTK]; if (v) return v; return !SUMMON && save.bestTime[ZONE] ? save.bestTime[ZONE] : 0; }
+const fmtT = t => { const m = Math.floor(t / 60), r = t - m * 60; return m > 0 ? `${m}:${r < 10 ? '0' : ''}${r.toFixed(2)}` : r.toFixed(2); };
+const tmEl = document.createElement('div'); tmEl.id = 'tm'; tmEl.innerHTML = '<div id="tmb"></div><div id="tmc">0.00</div><div id="tmd"></div>'; document.body.appendChild(tmEl);
+let tmLast = '';
+function updTimer() {
+  const b = bestSec(), e = elapsed; const c = $('tmc'), d = $('tmd');
+  $('tmb').textContent = b ? `최고 ${fmtT(b)}` : '최고 기록 없음';
+  const t = fmtT(e); let cls = started ? 'run' : 'idle', dl = '';
+  if (b && started && !killed) { const r = e / b; dl = e <= b ? `-${(b - e).toFixed(2)}` : `+${(e - b).toFixed(2)}`; cls = r > 1 ? 'over' : r > .85 ? 'hot' : r > .7 ? 'warm' : 'run'; }
+  if (killed) { cls = newRecord ? 'rec' : 'fin'; dl = newRecord ? '신기록!' : (b ? `+${(e - b).toFixed(2)}` : ''); }
+  const key = t + cls + dl; if (key === tmLast) return; tmLast = key;
+  c.textContent = t; c.className = cls; d.textContent = dl; d.className = cls;
+}
+
 function showResult() {
   save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ z: ZONE, v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
-  const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed);
+  if (!SUMMON) { const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed); }
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
   const ov = $('ov'); ov.style.display = 'flex';
-  sgEl.style.display = 'none'; ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}개${autoCleared ? ` · 자동 정리 ${autoCleared}개(소환 때 시야를 가려 치운 것, 코인 없음)` : ''}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  sgEl.style.display = 'none'; ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}개${autoCleared ? ` · 자동 정리 ${autoCleared}개(소환 때 시야를 가려 치운 것, 코인 없음)` : ''}<br>걸린 시간 ${fmtT(elapsed)}초${newRecord ? " · 신기록!" : (bestSec() ? " · 최고 " + fmtT(bestSec()) + "초" : "")} · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('nextz').onclick = () => { save.zone = nextZone(ZONE); writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); };
   $('again').onclick = () => { save.visits[ZONE] = VISIT; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); location.href = u.toString(); };
@@ -798,13 +814,13 @@ function update(dt) {
   if (cooldown > 0) cooldown -= dt;
   if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = magN(reloadW); } }
   updBar();
-  if (started && !GS.every(q => q.kstate === 'done')) elapsed += dt;
+  if (started && !killed) { elapsed += (clockDt === null ? dt : clockDt); if (GS.every(q => q.kstate === 'collapse' || q.kstate === 'done')) { killed = true; const b0 = bestSec(); if (!b0 || elapsed < b0) { newRecord = true; save.bt2[BTK] = +elapsed.toFixed(2); if (!TEST) writeSave(save); } } } clockDt = null; updTimer();
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) setStatus(); }
   updateFlying(dt); updateDebris(dt); showAim();
   for (const g of GS) { if (MOVE && started && (g.kstate === 'guard' || g.kstate === 'exposed')) updateGuardian(g, dt); if (g.kstate === 'collapse') updateCollapse(g, dt); if (g.coreMesh && g.kstate === 'exposed') { const p = 1 + Math.sin(performance.now() / 160) * .06; g.coreMesh.scale.setScalar(p); } }
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.6); cam.position.set(shakeBase.x + (Math.random() - .5) * shake * .25, shakeBase.y + (Math.random() - .5) * shake * .2, shakeBase.z); } else cam.position.copy(shakeBase);
 }
-function frame() { const now = performance.now(); let dt = Math.min(.05, (now - last) / 1000); last = now; if (hitStop > 0) { hitStop -= dt; dt *= .12; } update(dt); renderer.render(sc, cam); requestAnimationFrame(frame); }
+function frame() { const now = performance.now(); const last0 = last; let dt = Math.min(.05, (now - last) / 1000); last = now; clockDt = Math.min(.5, (now - last0) / 1000); if (hitStop > 0) { hitStop -= dt; dt *= .12; } update(dt); renderer.render(sc, cam); requestAnimationFrame(frame); }
 
 // ---------- 테스트 진행(화면 확인용, 시간 시뮬레이션) ----------
 function aimAt(p) { const v = p.clone().project(cam); fire(v.x, v.y); }
@@ -839,6 +855,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
