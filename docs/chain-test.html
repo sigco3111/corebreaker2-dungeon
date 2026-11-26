@@ -1,0 +1,6 @@
+<!doctype html><title>run</title><iframe id=f width=800 height=450></iframe><script>
+const Z=location.hash.slice(1)||'4';const f=document.getElementById('f');f.src='../index.html?visit=1&zone='+Z+'&g=knight,barbarian,mage';
+setTimeout(()=>{const C=f.contentWindow.__cb2;const out=[];const cs=[];
+for(const g of C.GS){for(const c of Object.keys(g.PARTS)){if(!g.PARTS[c].alive)continue;const c0=C.coins;C.breakPart(g,+c);cs.push(C.coins-c0);}}
+document.title='done:zone'+Z+' chain='+(C.ZR.chain||0)+' coinsPerBreak='+cs.join(',');},3000);
+</script>

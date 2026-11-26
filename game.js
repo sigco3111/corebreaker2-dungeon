@@ -26,12 +26,12 @@ const T = THEMES[(ZONE - 1) % 8];
 const MOVEP = {   // 종류별 이동 패턴(속도 배율, 평균 약 1)
   rogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5, skelrogue: t => Math.sin(t * 2.6) > .2 ? 1.7 : .5,
   knight: () => .85, skelwar: () => .85, skelminion: () => 1.25, barbarian: t => 1 + .25 * Math.sin(t * 1.7), mage: t => 1 + .35 * Math.sin(t * .9), skelmage: t => 1 + .35 * Math.sin(t * .9) };
-let hitStop = 0;
+let hitStop = 0, chainN = 0, chainT = 0;
 const ZRULES = [
   { t: '장전이 빠르다', rl: .8 }, { t: '코인 +50%, 수호자 약간 빠름', coin: 1.5, spd: 1.1 },
-  { t: '게이지가 빨리 찬다', gg: 1.6 }, { t: '수호자가 빠르다', spd: 1.25 },
+  { t: '게이지가 빨리 찬다', gg: 1.6 }, { t: '수호자가 빠르다, 6초 안에 연속 파괴하면 보너스 코인', spd: 1.25, chain: 1 },
   { t: '방어 시간이 짧다, 수호자 약간 빠름', blk: .8, spd: 1.1 }, { t: '장전 느림, 게이지 빠름', rl: 1.3, gg: 1.3 },
-  { t: '코인 +30%, 게이지 약간 빨리 참', coin: 1.3, gg: 1.2 }, { t: '수호자 빠름, 방어 짧음, 장전 약간 빠름', spd: 1.15, blk: .85, rl: .9 }];
+  { t: '코인 +30%, 게이지 약간 빨리 참', coin: 1.3, gg: 1.2 }, { t: '수호자 빠름, 방어 짧음, 장전 약간 빠름, 6초 안에 연속 파괴하면 보너스 코인', spd: 1.15, blk: .85, rl: .9, chain: 1 }];
 const ZR = ZRULES[(ZONE - 1) % 8];
 let s = ZONE * 7919 + VISIT * 104729 + 13;
 const R = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
@@ -345,6 +345,7 @@ function breakPart(g, c) {
   { const wp = mk ? new THREE.Vector3(mk.x + g.off, mk.y, mk.z + .25) : new THREE.Vector3(g.off, g.slot.H * .5, g.slot.z + .3);
     popLabel(`${pt.name || '장비'} 파괴!`, wp); burst(wp.x, wp.y, wp.z, 255, 255, 255, 40, 7, .09); burst(wp.x, wp.y, wp.z, 255, 200, 60, 30, 5, .07); }
   addCoins(20, g.off, g.slot.H * 1.1, g.slot.z + .5);
+  if (ZR.chain) { chainN = chainT > 0 ? chainN + 1 : 1; chainT = 6; if (chainN > 1) { addCoins(15 * (chainN - 1), g.off, g.slot.H * 1.3, g.slot.z + .5); popLabel(`연쇄 x${chainN}! 보너스 +${15 * (chainN - 1)}`, new THREE.Vector3(g.off, g.slot.H * 1.15, g.slot.z + .5)); } }
   if (g.partsBroken === Object.keys(g.PARTS).length) exposeCore(g); else setStatus();
 }
 function hitKnight(h) {
@@ -679,6 +680,7 @@ if (!TEST) {
 let last = performance.now();
 const shakeBase = cam.position.clone();
 function update(dt) {
+  if (chainT > 0) chainT -= dt;
   if (cooldown > 0) cooldown -= dt;
   if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = MAG[reloadW].n; } }
   updBar();
