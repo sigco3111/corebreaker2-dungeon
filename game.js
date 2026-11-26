@@ -239,10 +239,10 @@ const GTYPES = {
   barbarian: { go: 1.2, gb: 0.8, name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { go: 1, gb: 1, name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
   rogue: { go: 1, gb: 0.7, hs: .9, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
-  skelwar: { go: 1, gb: 1, hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
+  skelwar: { go: 1, gb: 1, hs: 1.0, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   skelmage: { go: 1, gb: 1, name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  skelrogue: { go: 1, gb: 0.7, hs: .86, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
-  skelminion: { go: 1.3, gb: 0.6, hs: .72, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
+  skelrogue: { go: 1, gb: 0.7, hs: .95, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
+  skelminion: { go: 1.3, gb: 0.6, hs: .8, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
 const SLOTS = [
   { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
   { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
