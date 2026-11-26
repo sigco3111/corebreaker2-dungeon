@@ -1,0 +1,4 @@
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&g=skelmage,mage,knight&w=2';
+setTimeout(()=>{f.contentDocument.getElementById('go').click();const C=f.contentWindow.__cb2;C.selectWeapon(2);C.ammo[2]=0;
+for(let i=0;i<3;i++)C.gaugeUp({kind:'knight',g:{},pshot:false});C.update(.01);document.title='gauge '+C.gauge;},2500);</script>

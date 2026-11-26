@@ -206,7 +206,7 @@ for (let i = 0; i < nt; i++) { const side = R() < .5 ? -1 : 1; const z = -3 - R(
 const GTYPES = {
   knight: { name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
-  mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } },
+  mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
   rogue: { hs: .95, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
   skelwar: { hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   skelmage: { name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
