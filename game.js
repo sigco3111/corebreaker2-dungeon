@@ -315,7 +315,13 @@ function exposeCore(g) {
   burst(CORE.x + g.off, CORE.y, CORE.z, 120, 240, 255, 30, 8, .07);
   shake = .5;
 }
+function popLabel(text, wp) {
+  const v = wp.clone().project(cam); const d = document.createElement('div');
+  d.textContent = text; d.style.cssText = `position:absolute;left:${(v.x * .5 + .5) * 100}%;top:${(-v.y * .5 + .5) * 100}%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;color:#fff;font-weight:800;font-size:3.2vmin;text-shadow:0 0 6px #f80,0 0 14px #f40,0 2px 0 #000;transition:all .9s ease-out;opacity:1`;
+  document.body.appendChild(d); requestAnimationFrame(() => { d.style.top = `calc(${(-v.y * .5 + .5) * 100}% - 8vmin)`; d.style.opacity = '0'; d.style.transform = 'translate(-50%,-50%) scale(1.4)'; }); setTimeout(() => d.remove(), 1000);
+}
 function breakPart(g, c) {
+  const mk = g.marks && g.marks[c] ? { x: g.marks[c].x, y: g.marks[c].y, z: g.marks[c].z } : null;
   if (g.marks && g.marks[c]) { sc.remove(g.marks[c].sp); delete g.marks[c]; }
   sfx('part');
   const { K } = g; const pt = g.PARTS[c]; pt.alive = false; g.partsBroken++; let k = 0;
@@ -324,6 +330,8 @@ function breakPart(g, c) {
     if ((k++ % 3) === 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 8, Math.random() * 6 + 1, Math.random() * 6, g.kpt, 0);
   }
   K.mesh.instanceMatrix.needsUpdate = true; shake = .35;
+  { const wp = mk ? new THREE.Vector3(mk.x + g.off, mk.y, mk.z + .25) : new THREE.Vector3(g.off, g.slot.H * .5, g.slot.z + .3);
+    popLabel(`${pt.name || '장비'} 파괴!`, wp); burst(wp.x, wp.y, wp.z, 255, 255, 255, 40, 7, .09); burst(wp.x, wp.y, wp.z, 255, 200, 60, 30, 5, .07); }
   addCoins(20, g.off, g.slot.H * 1.1, g.slot.z + .5);
   if (g.partsBroken === Object.keys(g.PARTS).length) exposeCore(g); else setStatus();
 }
@@ -672,6 +680,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+window.__cb2 = { breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
