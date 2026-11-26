@@ -674,7 +674,7 @@ let hlG = null, hlC = -1;
 const flashQ = [];
 function paintCat(G, C, k) { if (!G || C < 0 || !G.K.mesh.instanceColor) return; const K = G.K; for (let i = 0; i < K.n; i++) if (K.cat[i] == C && K.alive[i]) { const v = K.v[i]; col.setRGB(Math.min(1, v[3] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[4] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[5] / 255 * k + (k > 1 ? .12 : 0)), THREE.SRGBColorSpace); K.mesh.setColorAt(i, col); } K.mesh.instanceColor.needsUpdate = true; }
 function setHL(g, c) { if (hlG === g && hlC === c) return; paintCat(hlG, hlC, 1); hlG = g; hlC = c; paintCat(g, c, 1.55); }
-function flashPart(g, c) { if (TEST) return; paintCat(g, c, 2.6); const f = flashQ.find(x => x.g === g && x.c === c); if (f) f.t = .07; else flashQ.push({ g, c, t: .07 }); }
+function flashPart(g, c) { if (TEST) return; const f = flashQ.find(x => x.g === g && x.c === c); if (f) { f.t = .07; return; } paintCat(g, c, 1.9); flashQ.push({ g, c, t: .07 }); }   // 이미 번쩍이는 중이면 타이머만 연장(재색칠 없음)
 function updateFlash(dt) { for (let i = flashQ.length - 1; i >= 0; i--) { const f = flashQ[i]; f.t -= dt; if (f.t <= 0) { paintCat(f.g, f.c, f.g === hlG && f.c === hlC ? 1.55 : 1); flashQ.splice(i, 1); } } }
 function showAim() {
   if (!lastAim) return;
