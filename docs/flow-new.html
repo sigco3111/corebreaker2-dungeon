@@ -15,4 +15,4 @@ for(let step=0;step<30*400;step++){C.update(1/30);t+=1/30;
   if(a){C.fire(a[0],a[1]);if(C.flying.length>n0){st.shotsFight++;const h=C.flying[C.flying.length-1].hits[0];if(h&&(h.kind==='core'||h.kind==='knight'))st.onPartF++;else st.missF++;}}}
 }
 st.elapsed=+C.elapsed.toFixed(2);st.killed=C.killed;st.newRecord=C.newRecord;st.bt2=JSON.stringify(C.bt2);st.hud=d.getElementById('tmc').textContent+'|'+d.getElementById('tmb').textContent+'|'+d.getElementById('tmd').textContent;st.tClearSim=st.tClear;st.coins=C.coins;st.states=C.GS.map(g=>g.kstate).join(',');st.overlay=d.getElementById('ov').style.display;st.ovText=(d.getElementById('ov').innerText||'').slice(0,60).replace(/\n/g,' ');
-document.title='done:'+JSON.stringify(st);}catch(e){document.title='err:'+e.message+' '+(e.stack||'').split('\n')[1];}},9000);</script>
+if(H[3]==='buy'){d.querySelectorAll('.sp').forEach(b=>b.click());st.afterBuy=JSON.stringify(C.save.sup)+' coins='+C.save.coins;}document.title='done:'+JSON.stringify(st);}catch(e){document.title='err:'+e.message+' '+(e.stack||'').split('\n')[1];}},9000);</script>

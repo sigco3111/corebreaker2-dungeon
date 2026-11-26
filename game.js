@@ -152,7 +152,7 @@ function marchVoxels(e, r) {  // returns {t,p,i} or null
 
 let totalCoins = 0, propsBroken = 0, shots = 0, hitsLanded = 0;
 function addCoins(n, wx, wy, wz) {
-  n = Math.round(n * (ZR.coin || 1) * (SUPA.coin ? 1.2 : 1));
+  n = Math.round(n * (ZR.coin || 1));
   totalCoins += n; $('tr').textContent = '코인 ' + totalCoins;
   const v = new THREE.Vector3(wx, wy, wz).project(cam);
   const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+' + n;
@@ -553,14 +553,14 @@ function pickHit(nx, ny, t0 = 0) {
 }
 const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }, { n: 4, rl: 2.2 }, { n: 6, rl: 1.8 }];
 // 특수 탄창(1회용, 한 판만 적용). 영구 해금과 달리 쓰면 사라진다. 시작 버튼을 눌러야 소모된다.
-const SUPPLIES = [
-  { id: 'rl', n: '급속 장전 탄창', d: '이번 판 장전 시간 40% 단축', p: 120 },
-  { id: 'mag', n: '확장 탄창', d: '이번 판 탄창 +25% (관통탄 제외)', p: 150 },
-  { id: 'coin', n: '코인 보급', d: '이번 판 코인 +20% (한 판 수입 약 830이면 +166, 가격 200보다 적음: 수입이 1,000 넘을 때만 이득)', p: 200 }];
+const SUPPLIES = [   // 코인을 늘리는 품목은 두지 않는다(자동 이득이 되면 소모처가 아님). 전투·편의용 선택 보급만.
+  { id: 'rl', n: '급속 장전', e: '장전 -40%', p: 120 },
+  { id: 'mag', n: '확장 탄창', e: '탄창 +25%', p: 150 },
+  { id: 'pierce', n: '관통 충전', e: '관통탄 게이지 50% 시작', p: 100 }];
 const SUPA = Object.assign({}, save.sup);
 const magBase = w => { const L = (save.wl[w] || 1); const b = MAG[w].n; return w === 0 ? b + (L >= 7 ? 2 : 0) + (L >= 10 ? 2 : 0) : w === 1 ? b + (L >= 7 ? 1 : 0) + (L >= 10 ? 2 : 0) : w === 2 ? b + (L >= 4 ? 1 : 0) + (L >= 8 ? 1 : 0) : w === 3 ? b + (L >= 10 ? 1 : 0) : b + (L >= 10 ? 2 : 0); };
 const magN = w => { const m = magBase(w); return SUPA.mag && w !== 2 ? m + Math.max(1, Math.round(m * .25)) : m; };
-const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
+const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = SUPA.pierce ? 50 : 0; const GAUGE_MAX = 100;
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
   if (ammo[2] >= magN(2)) return;
@@ -651,7 +651,7 @@ window.addEventListener('keydown', e => {
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${save.sup[x.id] ? 'disabled' : (save.coins >= x.p ? '' : 'disabled')} title="${x.d}">${x.n} ${save.sup[x.id] ? '(준비됨)' : x.p}<small>${x.d}</small></button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${save.sup[x.id] ? 'disabled' : (save.coins >= x.p ? '' : 'disabled')}>${x.n} · ${x.e} · ${save.sup[x.id] ? '준비됨' : x.p}</button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
