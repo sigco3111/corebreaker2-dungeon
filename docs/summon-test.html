@@ -1,0 +1,10 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(location.hash.slice(1)||1)+'&mode=summon';
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const r={};
+r.props=C.props.length;r.removed=f.contentWindow.__removedProps;r.sg0=C.sg.join('/');r.states0=C.GS.map(g=>g.kstate).join(',');
+// dormant: any knight pick over a grid?
+let kn=0;for(let x=-1;x<=1;x+=.02)for(let y=-.7;y<=.7;y+=.02){const b=C.pickHit(x,y).best;if(b&&b.kind==='knight')kn++;}r.knightPicksDormant=kn;
+let n=0;for(const e of C.props.slice()){if(C.sg[2])break;C.breakProp(e);n++;}
+r.brokenForSummon=n;r.sg1=C.sg.join('/');r.states1=C.GS.map(g=>g.kstate).join(',');
+let kn2=0;for(let x=-1;x<=1;x+=.02)for(let y=-.7;y<=.7;y+=.02){const b=C.pickHit(x,y).best;if(b&&b.kind==='knight')kn2++;}r.knightPicksAfter=kn2;
+document.title='done:'+JSON.stringify(r);},3500);</script>

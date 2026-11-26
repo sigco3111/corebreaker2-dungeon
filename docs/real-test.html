@@ -1,8 +1,8 @@
 <!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
-const H=location.hash.slice(1).split('&');const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(H[0]||1);
+const H=location.hash.slice(1).split('&');const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(H[0]||1)+(H[3]?'&mode=summon':'');
 const LAG=+(H[1]||0)/1000;const STOP=+(H[2]||0);
 setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const THREE_=null;
-const miss=[],okd=[];const st={shots:0,onPart:0,body:0,wall:0,prop:0,other:0,core:0,block:0,t:0};const hist=[];
+const miss=[],okd=[];if(H[3]){for(const e of C.props.slice()){if(C.sg[2])break;C.breakProp(e);}}const st={shots:0,onPart:0,body:0,wall:0,prop:0,other:0,core:0,block:0,t:0};const hist=[];
 const pos=(g,c)=>{const m=g.marks[c];return [m.x+g.off,m.y+.04+(g.bob||0),m.z+.25];};
 for(let step=0;step<30*120;step++){
   C.update(1/30);st.t+=1/30;

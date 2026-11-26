@@ -3,6 +3,8 @@ const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 const STAGE = +(q.get('stage') || 0);        // 테스트용: 스크립트 진행 단계
 const TEST = STAGE !== 0;
+let summoned = false;
+const SUMMON = q.get('mode') === 'summon' || (!TEST && q.get('mode') !== 'classic'); summoned = !SUMMON;   // 새 루프: 정지 소품 파괴 -> 소환 게이지 -> 수호자 무리
 const SAVE_KEY = 'cb2.save.v1';
 const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
 function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
@@ -199,6 +201,7 @@ function breakProp(e) {
   burst(cx.x, cx.y, cx.z, 255, 213, 74, 14, 6, .08);
   addCoins(coins * 10, cx.x, cx.y + .4, cx.z);
   if (/barrel|keg/.test(e.name)) explodeAt(cx);
+  if (typeof addSummonGauge === 'function') addSummonGauge(e);
 }
 const shockFx = [];
 function shockwave(cx) {
@@ -327,7 +330,7 @@ function gStatus(g) {
   if (g.kstate === 'exposed') return `${g.name} <span style="color:#7ff">코어 노출!</span>`;
   return `${g.name} 처치`;
 }
-function setStatus() { const left = GS.filter(g => g.kstate !== 'collapse' && g.kstate !== 'done').length; $('tc').innerHTML = `수호자 ${GS.length - left}/${GS.length} 처치<br>` + GS.map(gStatus).join(' · '); }
+function setStatus() { if (SUMMON && !summoned) { $('tc').innerHTML = '소품을 부숴 소환 게이지를 채우세요<br>가득 차면 수호자가 나타납니다'; return; } const left = GS.filter(g => g.kstate !== 'collapse' && g.kstate !== 'done').length; $('tc').innerHTML = `수호자 ${GS.length - left}/${GS.length} 처치<br>` + GS.map(gStatus).join(' · '); }
 function flashText(t) { $('tc').innerHTML = t; flashT = .8; }
 const flashSetStatusSoon = () => { };
 function exposeCore(g) {
@@ -465,21 +468,49 @@ for (let k = 0, t = 0; k < cnt && t < 400; t++) {
 }
 { const LOW = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small'];
   for (let k = 0, t = 0; k < 4 && t < 100; t++) { const x = (R() * 2 - 1) * 5, z = -2.4 - R() * 2.0; if (Math.abs(x) < 2.4) continue; const nm = LOW[Math.floor(R() * LOW.length)]; const d = P[nm]; if (!d) continue; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * .6; if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue; placed.push([x, z, rad]); put(nm, x, z, 1.0, Math.floor(R() * 4) * Math.PI / 2, 0, true); k++; } }
+if (SUMMON) {   // 대량 배치: 소품을 훨씬 많이(겹침만 피함). 아래 안전망이 수호자를 가리는 것은 제거
+  const lowN = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small', 'bottle_B_brown'];
+  for (let k = 0, t = 0; k < 42 && t < 1200; t++) {
+    const x = (R() * 2 - 1) * 6.0, z = -2.6 - R() * 6.8;
+    const pool = R() < .55 ? lowN : T.p; const nm = pool[Math.floor(R() * pool.length)]; const d = P[nm]; if (!d) continue;
+    const sz_ = 0.7 + R() * .35; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * sz_ * .5;
+    if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue;
+    placed.push([x, z, rad]); put(nm, x, z, sz_, Math.floor(R() * 4) * Math.PI / 2 + (R() - .5) * .4, 0, true); k++;
+  }
+}
 // 안전망: 수호자의 이동 범위 안에서 장비/코어를 가리는 소품은 제거(조준 시야 확보)
-{
+function clearOccluders(fx) {
   const cp = cam.position.clone(); let removed = 0;
   for (let pi = props.length - 1; pi >= 0; pi--) {
-    const e = props[pi]; let blocked = false;
+    const e = props[pi]; let blocked = false; if (e.dead) continue;
     for (const g of GS) { if (blocked) break;
       for (let o = -g.slot.amp; o <= g.slot.amp + 1e-6 && !blocked; o += .4) for (const yy of [.15, .4, .7, .95]) for (const dx of [-.5, 0, .5]) {
         const P_ = new THREE.Vector3(g.slot.x + o + dx, g.slot.H * yy, g.slot.z); const dist = P_.distanceTo(cp);
         const rr_ = new THREE.Ray(cp, P_.clone().sub(cp).normalize()); const hit = rr_.intersectBox(e.bb, new THREE.Vector3());
         if (hit && hit.distanceTo(cp) < dist - .25) { blocked = true; break; } } }
-    if (blocked) { e.dead = true; e.mesh.visible = false; props.splice(pi, 1); removed++; }
+    if (blocked) { if (fx) { const c0 = e.bb.getCenter(new THREE.Vector3()); burst(c0.x, c0.y, c0.z, 200, 190, 170, 14, 5, .07); } e.dead = true; e.mesh.visible = false; props.splice(pi, 1); removed++; }
   }
-  window.__removedProps = removed;
+  window.__removedProps = (window.__removedProps || 0) + removed; return removed;
 }
-const TOTAL_PROPS = props.length;
+if (!SUMMON) clearOccluders(false);
+let TOTAL_PROPS = props.length;
+// ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
+const SG_NEED = Math.max(8, Math.ceil(TOTAL_PROPS * .45)); let sgVal = 0;
+const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:9.5vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
+sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
+function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.min(sgVal, SG_NEED)}/${SG_NEED}`; }
+if (SUMMON) {
+  for (const g of GS) { g.kstate = 'dormant'; g.K.mesh.visible = false; g.aura.visible = false; for (const c in g.marks) g.marks[c].sp.visible = false; }
+  sgEl.style.display = 'block'; updSG(); $('tc').innerHTML = '소품을 부숴 소환 게이지를 채우세요<br>가득 차면 수호자가 나타납니다';
+}
+function summonGuardians() {
+  if (summoned) return; summoned = true;
+  for (const g of GS) { if (g.kstate !== 'dormant') continue; g.kstate = 'guard'; g.K.mesh.visible = true; g.aura.visible = true; for (const c in g.marks) g.marks[c].sp.visible = true; }
+  { const n_ = clearOccluders(true); TOTAL_PROPS -= n_; }
+  for (const g of GS) for (const c in g.marks) relocateMark(g, c);
+  sfx('warn'); shake = Math.max(shake, .3); setStatus(); updSG(); flashText('수호자 출현!<br>장비를 먼저 부숴라');
+}
+function addSummonGauge(e) { if (summoned) return; sgVal += e.total > 1500 ? 2 : 1; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }
 
 // ---------- 사격 ----------
 const proj = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd54a }));
@@ -493,7 +524,7 @@ function pickHit(nx, ny, t0 = 0) {
   let best = null;
   for (const e of props) { if (e.dead) continue; const h = marchVoxels(e, ray); if (h && (!best || h.t < best.t)) best = { kind: 'prop', e, ...h }; }
   for (const g of GS) {
-    if (g.kstate === 'collapse' || g.kstate === 'done') continue;
+    if (g.kstate === 'collapse' || g.kstate === 'done' || g.kstate === 'dormant') continue;
     const gb = g.bob || 0; const kr = new THREE.Ray(ray.origin.clone().sub(new THREE.Vector3(g.off, gb, 0)), ray.direction); const h = marchVoxels(g.K, kr);
     if (h && (!best || h.t < best.t)) best = { kind: 'knight', g, ...h, wp: h.p.clone().add(new THREE.Vector3(g.off, gb, 0)) };
     if (g.kstate === 'guard' && g.marks) for (const c in g.marks) {   // 표식(노란 고리)을 겨누면 그 부위가 맞는다: 조준 보조
@@ -784,6 +815,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, get coins() { return totalCoins; } };
+window.__cb2 = { ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
