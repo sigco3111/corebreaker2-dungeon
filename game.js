@@ -748,6 +748,7 @@ window.addEventListener('keydown', e => { if (e.key === 'p' || e.key === 'P' || 
 function bestSec() { return save.bt2[BTK] || 0; }
 const fmtT = t => { const m = Math.floor(t / 60), r = t - m * 60; return m > 0 ? `${m}:${r < 10 ? '0' : ''}${r.toFixed(2)}` : r.toFixed(2); };
 const tmEl = document.createElement('div'); tmEl.id = 'tm'; tmEl.innerHTML = '<div id="tms"></div><div id="tmb"></div><div id="tmc">0.00</div><div id="tmd"></div>'; document.body.appendChild(tmEl);
+{ const pb = document.createElement('button'); pb.id = 'pzb'; pb.textContent = '❚❚'; pb.setAttribute('aria-label', '일시정지'); tmEl.appendChild(pb); for (const ev of ['pointerdown', 'mousedown', 'touchstart']) pb.addEventListener(ev, e => e.stopPropagation()); pb.onclick = () => setPaused(true); }
 let tmLast = '';
 function updTimer() {
   const b = bestSec(), e = elapsed; const c = $('tmc'), d = $('tmd');

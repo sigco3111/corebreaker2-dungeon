@@ -1,7 +1,7 @@
 <!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
 const H=location.hash.slice(1).split('&');const mode=H[0]||'over';
 if(mode==='over'||mode==='hot'||mode==='pause'){localStorage.setItem('cb2.save.v1',JSON.stringify({bt2:{'s1d3':mode==='over'?10:(mode==='hot'?28:600)}}));}
-const f=document.getElementById('f');f.src='../index.html?visit=1&zone=1&mode=summon';
+const f=document.getElementById('f');if(H[1]==='full'){document.body.style.cssText='margin:0;overflow:hidden';f.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0';}f.src='../index.html?visit=1&zone=1&mode=summon';
 setTimeout(()=>{try{const d=f.contentDocument;const C=f.contentWindow.__cb2;const out={hidden:d.hidden,pausedAtStart:C.paused};
 d.getElementById('go').click();
 if(mode==='pause'){const e0=C.elapsed;setTimeout(()=>{out.runningBy=+(C.elapsed-e0).toFixed(2);C.setPaused(true);const e1=C.elapsed;setTimeout(()=>{out.pausedDelta=+(C.elapsed-e1).toFixed(3);out.pausedFlag=C.paused;C.setPaused(false);const e2=C.elapsed;setTimeout(()=>{out.afterResume=+(C.elapsed-e2).toFixed(2);document.title='done:'+JSON.stringify(out);document.body.insertAdjacentHTML('afterbegin','<pre style="position:fixed;z-index:99;background:#fff;font:20px monospace;top:0;left:0">'+JSON.stringify(out)+'</pre>');},2000);},2000);},2000);return;}
