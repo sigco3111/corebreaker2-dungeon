@@ -373,7 +373,7 @@ function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
+    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1); if (pt.hp > 0) flashPart(g, c); if (!TEST) hitStop = Math.max(hitStop, (h.dmg || 1) >= 1 ? .05 : .02);
     let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
@@ -671,11 +671,11 @@ function aimInfo(nx, ny) {
   return null;
 }
 let hlG = null, hlC = -1;
-function setHL(g, c) {
-  if (hlG === g && hlC === c) return;
-  const paint = (G, C, k) => { if (!G || C < 0 || !G.K.mesh.instanceColor) return; const K = G.K; for (let i = 0; i < K.n; i++) if (K.cat[i] == C && K.alive[i]) { const v = K.v[i]; col.setRGB(Math.min(1, v[3] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[4] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[5] / 255 * k + (k > 1 ? .12 : 0)), THREE.SRGBColorSpace); K.mesh.setColorAt(i, col); } K.mesh.instanceColor.needsUpdate = true; };
-  paint(hlG, hlC, 1); hlG = g; hlC = c; paint(g, c, 1.55);
-}
+const flashQ = [];
+function paintCat(G, C, k) { if (!G || C < 0 || !G.K.mesh.instanceColor) return; const K = G.K; for (let i = 0; i < K.n; i++) if (K.cat[i] == C && K.alive[i]) { const v = K.v[i]; col.setRGB(Math.min(1, v[3] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[4] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[5] / 255 * k + (k > 1 ? .12 : 0)), THREE.SRGBColorSpace); K.mesh.setColorAt(i, col); } K.mesh.instanceColor.needsUpdate = true; }
+function setHL(g, c) { if (hlG === g && hlC === c) return; paintCat(hlG, hlC, 1); hlG = g; hlC = c; paintCat(g, c, 1.55); }
+function flashPart(g, c) { if (TEST) return; paintCat(g, c, 2.6); const f = flashQ.find(x => x.g === g && x.c === c); if (f) f.t = .07; else flashQ.push({ g, c, t: .07 }); }
+function updateFlash(dt) { for (let i = flashQ.length - 1; i >= 0; i--) { const f = flashQ[i]; f.t -= dt; if (f.t <= 0) { paintCat(f.g, f.c, f.g === hlG && f.c === hlC ? 1.55 : 1); flashQ.splice(i, 1); } } }
 function showAim() {
   if (!lastAim) return;
   if (!crossTag) { crossTag = document.createElement('div'); crossTag.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:.4vmin;white-space:nowrap;font-size:2vmin;font-weight:800;text-shadow:0 1px 3px #000'; cross.appendChild(crossTag); }
@@ -701,7 +701,7 @@ if (!TEST) {
 let last = performance.now();
 const shakeBase = cam.position.clone();
 function update(dt) {
-  if (chainT > 0) chainT -= dt; updateShock(dt);
+  if (chainT > 0) chainT -= dt; updateShock(dt); updateFlash(dt);
   if (cooldown > 0) cooldown -= dt;
   if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = MAG[reloadW].n; } }
   updBar();
