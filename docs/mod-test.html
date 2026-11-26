@@ -5,7 +5,7 @@ f.onload=()=>setTimeout(()=>{ try{
  const d=f.contentDocument, w=f.contentWindow, C=w.__cb2; const log=[];
  d.getElementById('go').click(); C.showResult&&C.showResult();
  const md=()=>[...d.querySelectorAll('.md')];
- log.push({n:md().length});
+ log.push({n:md().length}); if(location.hash==='#pk'){d.querySelector('.pkbtn').click();}
  md()[0].click(); md()[3].click(); md()[9].click(); md()[8].click(); md()[8].click();
  log.push({save:JSON.stringify({md:C.save.md,mu:C.save.mu,coins:C.save.coins})});
  log.push({txt:d.querySelector('.shop')?d.querySelector('.shop').innerText.replace(/\n/g,'|').slice(0,500):'noshop'});
