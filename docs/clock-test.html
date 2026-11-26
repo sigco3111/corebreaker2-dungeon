@@ -1,0 +1,10 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const f=document.getElementById('f');f.src='../index.html?visit=1&zone=1&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument;const C=f.contentWindow.__cb2;const o={};d.getElementById('go').click();
+let T=100000;C.resetLast(T);const adv=(ms,step,hid)=>{for(let k=0;k<ms/step;k++){T+=step;C.frameStep(T,hid);}};
+const e0=C.elapsed;adv(2000,16,false);o.fast60fps_2s=+(C.elapsed-e0).toFixed(3);
+const e1=C.elapsed;adv(2000,200,false);o.slow5fps_2s=+(C.elapsed-e1).toFixed(3);
+const e2=C.elapsed;C.setPaused(true);adv(3000,16,false);o.paused_3s=+(C.elapsed-e2).toFixed(3);C.setPaused(false);C.resetLast(T);
+const e3=C.elapsed;adv(1000,16,false);o.afterResume_1s=+(C.elapsed-e3).toFixed(3);
+const e4=C.elapsed;adv(5000,16,true);o.hidden_5s=+(C.elapsed-e4).toFixed(3);T+=100;C.resetLast(T);adv(1000,16,false);o.afterHidden_1s=+(C.elapsed-e4).toFixed(3);
+document.title='done:'+JSON.stringify(o);}catch(e){document.title='err:'+e.message+(e.stack||'').split('\n')[1];}},9000);</script>

@@ -738,14 +738,20 @@ function updateGuardian(g, dt) {
 }
 let elapsed = 0, clockDt = null, killed = false, newRecord = false;
 // ---- 타임어택 HUD: 시작 클릭부터 마지막 수호자를 쓰러뜨리는 순간까지(히트스톱·일시정지 제외, 실제 시간) ----
-const MODEK = SUMMON ? 's' : 'c', BTK = MODEK + ZONE;
-function bestSec() { const v = save.bt2[BTK]; if (v) return v; return !SUMMON && save.bestTime[ZONE] ? save.bestTime[ZONE] : 0; }
+const MODEK = SUMMON ? 's' : 'c', BTK = `${MODEK}${ZONE}d${DIFF}`;   // 같은 구역·모드·난이도끼리만 비교
+let paused = false;
+const pzEl = document.createElement('div'); pzEl.style.cssText = 'position:fixed;inset:0;z-index:7;display:none;align-items:center;justify-content:center;background:rgba(8,6,12,.7);color:#fff;font:800 5vmin sans-serif;text-align:center;cursor:pointer'; pzEl.innerHTML = '일시정지<br><span style="font-size:2.4vmin;font-weight:400">탭하거나 P 키로 계속 (시간도 멈춤)</span>'; document.body.appendChild(pzEl);
+function setPaused(v) { if (v && (!started || killed)) return; paused = v; pzEl.style.display = v ? 'flex' : 'none'; if (!v) last = performance.now(); }
+pzEl.addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(false); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); else last = performance.now(); });
+window.addEventListener('keydown', e => { if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') setPaused(!paused); });
+function bestSec() { return save.bt2[BTK] || 0; }
 const fmtT = t => { const m = Math.floor(t / 60), r = t - m * 60; return m > 0 ? `${m}:${r < 10 ? '0' : ''}${r.toFixed(2)}` : r.toFixed(2); };
-const tmEl = document.createElement('div'); tmEl.id = 'tm'; tmEl.innerHTML = '<div id="tmb"></div><div id="tmc">0.00</div><div id="tmd"></div>'; document.body.appendChild(tmEl);
+const tmEl = document.createElement('div'); tmEl.id = 'tm'; tmEl.innerHTML = '<div id="tms"></div><div id="tmb"></div><div id="tmc">0.00</div><div id="tmd"></div>'; document.body.appendChild(tmEl);
 let tmLast = '';
 function updTimer() {
   const b = bestSec(), e = elapsed; const c = $('tmc'), d = $('tmd');
-  $('tmb').textContent = b ? `최고 ${fmtT(b)}` : '최고 기록 없음';
+  $('tmb').textContent = b ? `최고 ${fmtT(b)}` : '최고 기록 없음'; $('tms').textContent = `구역${ZONE} · 난이도${DIFF + 1} · ${SUMMON ? '새 모드' : '클래식'}`;
   const t = fmtT(e); let cls = started ? 'run' : 'idle', dl = '';
   if (b && started && !killed) { const r = e / b; dl = e <= b ? `-${(b - e).toFixed(2)}` : `+${(e - b).toFixed(2)}`; cls = r > 1 ? 'over' : r > .85 ? 'hot' : r > .7 ? 'warm' : 'run'; }
   if (killed) { cls = newRecord ? 'rec' : 'fin'; dl = newRecord ? '신기록!' : (b ? `+${(e - b).toFixed(2)}` : ''); }
@@ -796,7 +802,7 @@ function moveCross(e) {
   const [nx, ny, px, py] = ndc(e); cross.style.left = (px * 100) + '%'; cross.style.top = (py * 100) + '%'; lastAim = [nx, ny]; showAim();
 }
 canvas.addEventListener('pointermove', moveCross);
-canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) return; moveCross(e); const [nx, ny] = ndc(e); fire(nx, ny); });
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started || paused) return; moveCross(e); const [nx, ny] = ndc(e); fire(nx, ny); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 if (!TEST) {
   const ov = $('ov'); ov.style.display = 'flex';
@@ -820,7 +826,8 @@ function update(dt) {
   for (const g of GS) { if (MOVE && started && (g.kstate === 'guard' || g.kstate === 'exposed')) updateGuardian(g, dt); if (g.kstate === 'collapse') updateCollapse(g, dt); if (g.coreMesh && g.kstate === 'exposed') { const p = 1 + Math.sin(performance.now() / 160) * .06; g.coreMesh.scale.setScalar(p); } }
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.6); cam.position.set(shakeBase.x + (Math.random() - .5) * shake * .25, shakeBase.y + (Math.random() - .5) * shake * .2, shakeBase.z); } else cam.position.copy(shakeBase);
 }
-function frame() { const now = performance.now(); const last0 = last; let dt = Math.min(.05, (now - last) / 1000); last = now; clockDt = Math.min(.5, (now - last0) / 1000); if (hitStop > 0) { hitStop -= dt; dt *= .12; } update(dt); renderer.render(sc, cam); requestAnimationFrame(frame); }
+function frameStep(now, hidden) { if (paused || hidden) { last = now; return; } const last0 = last; let dt = Math.min(.05, (now - last) / 1000); last = now; clockDt = (now - last0) / 1000; if (hitStop > 0) { hitStop -= dt; dt *= .12; } update(dt); }
+function frame() { frameStep(performance.now(), document.hidden); renderer.render(sc, cam); requestAnimationFrame(frame); }
 
 // ---------- 테스트 진행(화면 확인용, 시간 시뮬레이션) ----------
 function aimAt(p) { const v = p.clone().project(cam); fire(v.x, v.y); }
@@ -855,6 +862,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();

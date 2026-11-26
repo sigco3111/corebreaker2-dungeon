@@ -1,7 +1,10 @@
 <!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
-const H=location.hash.slice(1).split('&');const f=document.getElementById('f');f.src='../index.html?visit=3&zone=1&mode='+(H[0]||'summon');
-setTimeout(()=>{try{const d=f.contentDocument;const C=f.contentWindow.__cb2;const T=C.THREE;const out={pre:d.getElementById('tmc').textContent};
-d.getElementById('go').click();let t=0;
-// accuracy: sim 5.00s of update(1/30) with hitStop-like scaling unaffected (direct update): expect 5.00
-for(let i=0;i<150;i++){C.update(1/30);t+=1/30;}out.after5=+C.elapsed.toFixed(3);out.hud5=d.getElementById('tmc').textContent;
+const H=location.hash.slice(1).split('&');const mode=H[0]||'over';
+if(mode==='over'||mode==='hot'||mode==='pause'){localStorage.setItem('cb2.save.v1',JSON.stringify({bt2:{'s1d3':mode==='over'?10:(mode==='hot'?28:600)}}));}
+const f=document.getElementById('f');f.src='../index.html?visit=1&zone=1&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument;const C=f.contentWindow.__cb2;const out={hidden:d.hidden,pausedAtStart:C.paused};
+d.getElementById('go').click();
+if(mode==='pause'){const e0=C.elapsed;setTimeout(()=>{out.runningBy=+(C.elapsed-e0).toFixed(2);C.setPaused(true);const e1=C.elapsed;setTimeout(()=>{out.pausedDelta=+(C.elapsed-e1).toFixed(3);out.pausedFlag=C.paused;C.setPaused(false);const e2=C.elapsed;setTimeout(()=>{out.afterResume=+(C.elapsed-e2).toFixed(2);document.title='done:'+JSON.stringify(out);document.body.insertAdjacentHTML('afterbegin','<pre style="position:fixed;z-index:99;background:#fff;font:20px monospace;top:0;left:0">'+JSON.stringify(out)+'</pre>');},2000);},2000);},2000);return;}
+const n=mode==='hot'?5.3:5;for(let i=0;i<Math.round(n*30);i++)C.update(1/30);
+out.hud=d.getElementById('tmc').textContent+'|'+d.getElementById('tmb').textContent+'|'+d.getElementById('tmd').textContent+'|'+d.getElementById('tms').textContent;
 document.title='done:'+JSON.stringify(out);}catch(e){document.title='err:'+e.message+' '+(e.stack||'').split('\n')[1];}},9000);</script>
