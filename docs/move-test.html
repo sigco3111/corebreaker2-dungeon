@@ -1,0 +1,26 @@
+<!doctype html><body><iframe id=f src="http://localhost:8765/index.html?visit=3" width=1266 height=585></iframe><script>
+const f=document.getElementById('f'); const log=[];
+f.onload=()=>setTimeout(async()=>{
+ const w=f.contentWindow, d=f.contentDocument; d.getElementById('go').click();
+ const g=w.__cb2; const cv=d.querySelector('canvas'); const rect=cv.getBoundingClientRect();
+ const adv=(s)=>{for(let k=0;k<s*30;k++)g.sim(1/30)};
+ // 1) 이동 확인
+ const xs=[]; for(let i=0;i<14;i++){adv(.5); xs.push(+g.koff.toFixed(2));} log.push({sway:xs});
+ // 2) 상태 순환 확인
+ const modes=[]; for(let i=0;i<60;i++){adv(.15); modes.push(g.gmode[0]);} log.push({modes:modes.join('')});
+ // 3) 방어 중 사격: block 대기
+ let n=0; while(g.gmode!=='block'&&n++<400) adv(.05);
+ const part=(c)=>{for(let i=0;i<g.K.n;i++) if(g.K.alive[i]&&g.K.cat[i]==c){return i}};
+ const shootVox=(i)=>{const p=new g.cam.position.constructor(g.K.pos[i*3]+g.koff,g.K.pos[i*3+1],g.K.pos[i*3+2]); const v=p.project(g.cam); const x=rect.left+(v.x+1)/2*rect.width,y=rect.top+(1-v.y)/2*rect.height; adv(.3); cv.dispatchEvent(new w.PointerEvent('pointerdown',{clientX:x,clientY:y,bubbles:true})); };
+ // 가장 앞쪽 투구 복셀
+ let hi=-1,mz=-1e9; for(let i=0;i<g.K.n;i++) if(g.K.alive[i]&&g.K.cat[i]==1&&g.K.pos[i*3+2]>mz){mz=g.K.pos[i*3+2];hi=i}
+ const hp0=g.PARTS[1].hp,d0=g.deflects; shootVox(hi); adv(.5);
+ log.push({blockShot:{mode:g.gmode,deflectsDelta:g.deflects-d0,helmetHpDelta:hp0-g.PARTS[1].hp}});
+ // 4) 이동 중/열림 상태 사격: 열림 대기 후 적중(리드 없이 현재 위치 조준하면 이동량만큼 빗나갈 수 있음)
+ n=0; while(g.gmode!=='open'&&n++<400) adv(.05);
+ let hits=0,tries=0; for(let t=0;t<6;t++){ adv(.3); let hi2=-1,mz2=-1e9; for(let i=0;i<g.K.n;i++) if(g.K.alive[i]&&g.K.cat[i]==1&&g.K.pos[i*3+2]>mz2){mz2=g.K.pos[i*3+2];hi2=i}
+   if(hi2<0)break; const hp=g.PARTS[1].hp; const m=g.gmode; if(m!=='open')continue; tries++; shootVox(hi2); adv(.5); if(g.PARTS[1].hp<hp||!g.PARTS[1].alive)hits++; }
+ log.push({openShots:{tries,hits,helmetAlive:g.PARTS[1].alive}});
+ document.title='RES'+JSON.stringify(log);
+},1200);
+</script>
