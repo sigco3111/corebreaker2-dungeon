@@ -1,4 +1,4 @@
-<!doctype html><title>run</title><style>body{margin:0}</style><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{display:block}</style><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
 const Z=(location.hash.slice(1)||'1');const f=document.getElementById('f');f.src='../index.html?visit=1&zone='+Z+'&g=knight,barbarian,mage';
 setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;
 const hp=()=>C.GS.map(g=>Object.values(g.PARTS).map(p=>p.hp).join('/')).join(' | ');
@@ -9,5 +9,5 @@ for(const cand of bs){const mn=cand.bb.min,mx=cand.bb.max;for(let i=0;i<=6&&!pr;
 if(!b){document.title='done:no visible barrel';return;}
 out.push('hp0 '+hp()+' broken0 '+C.broken);C.selectWeapon(0);let n=0;
 const findAim=cand=>{const mn=cand.bb.min,mx=cand.bb.max;for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)for(const z of [mx.z,(mx.z+mn.z)/2]){const x=mn.x+(mx.x-mn.x)*i/8,y=mn.y+(mx.y-mn.y)*j/8;const p=C.projectPoint(x,y,z);const h=C.pickHit(p[0],p[1]).best;if(h&&h.kind==='prop'&&h.e===cand)return p;}return null;};
-const iv=setInterval(()=>{n++;C.update(.1);const a=findAim(b);if(a){pr=a;C.fire(a[0],a[1]);}if(b.dead||n>80){clearInterval(iv);setTimeout(()=>{C.update(.5);const ph=C.pickHit(pr[0],pr[1]).best;out.push('pick '+(ph?ph.kind+(ph.e?':'+ph.e.name:''):'none')+' hits '+C.hits+' ammo '+C.ammo[0]);out.push('shots '+n+' dead '+b.dead+' broken '+C.broken+' hp '+hp()+' coins '+C.coins);document.title='done:'+out.join(' ; ');},600);}},120);
+const iv=setInterval(()=>{n++;C.update(.1);const a=findAim(b);if(a){pr=a;C.fire(a[0],a[1]);}if(b.dead||n>80){clearInterval(iv);document.title='dead at tick '+n;setTimeout(()=>{C.update(.5);const ph=C.pickHit(pr[0],pr[1]).best;out.push('pick '+(ph?ph.kind+(ph.e?':'+ph.e.name:''):'none')+' hits '+C.hits+' ammo '+C.ammo[0]);out.push('shots '+n+' dead '+b.dead+' broken '+C.broken+' hp '+hp()+' coins '+C.coins);document.title='done:'+out.join(' ; ');},600);}},120);
 },2500);</script>
