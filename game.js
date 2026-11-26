@@ -331,8 +331,8 @@ function hitKnight(h) {
   const g = h.g, K = g.K, c = K.cat[h.i];
   if (g.kstate === 'collapse' || g.kstate === 'done') return;
   if (g.PARTS[c] && g.PARTS[c].alive) {
-    const pt = g.PARTS[c]; pt.hp--;
-    let k = 0; const cr = .3 * g.rel * (h.mult || 1); if ((h.mult || 1) >= 1.8) pt.hp--;
+    const pt = g.PARTS[c]; pt.hp -= (h.dmg || 1);
+    let k = 0; const cr = .3 * g.rel * (h.mult || 1);
     for (let i = 0; i < K.n; i++) if (K.alive[i] && K.cat[i] == c) {
       const dx = K.pos[i * 3] - h.p.x, dy = K.pos[i * 3 + 1] - h.p.y, dz = K.pos[i * 3 + 2] - h.p.z;
       if (dx * dx + dy * dy + dz * dz < cr * cr) { K.alive[i] = 0; K.count--; K.mesh.setMatrixAt(i, ZERO); if ((k++ % 2) == 0) spawnDebris(K.pos[i * 3] + g.off, K.pos[i * 3 + 1], K.pos[i * 3 + 2], K.v[i][3], K.v[i][4], K.v[i][5], (Math.random() - .5) * 5, Math.random() * 4 + 1, Math.random() * 5, g.kpt, 0); }
@@ -439,12 +439,12 @@ function pickHit(nx, ny, t0 = 0) {
   }
   return { best, far: ray.at(30, new THREE.Vector3()) };
 }
-const MAG = [{ n: 12, rl: 1.4 }, { n: 4, rl: 1.8 }, { n: 3, rl: 0 }];
-const ammo = [12, 4, 3]; let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
+const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }];
+const ammo = [12, 6, 3]; let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
   if (ammo[2] >= MAG[2].n) return;
-  gauge += h.pshot ? 6 : 14;
+  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1);
   if (gauge >= GAUGE_MAX) { gauge = 0; ammo[2] = MAG[2].n + (wLvl(2) >= 4 ? 1 : 0); $('tc').innerHTML = '게이지 완충!<br>관통탄 장전'; flashT = .9; sfx('warn'); }
 }
 function applyHit(h) {
@@ -463,7 +463,7 @@ const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
 // ---------- 무기 3종 (기본탄 / 범위탄 / 관통탄), 각 5단계 강화 ----------
 const WEAPONS = [
   { n: '기본탄', d: '12발 연사, 소진 시 장전', cd: .22, rad: 1, pierce: 0, col: 0xffd54a },
-  { n: '범위탄', d: '4발, 넓게 깨짐·장비 2배, 소진 시 장전', cd: .5, rad: 2.0, pierce: 0, col: 0xff7a4a },
+  { n: '산탄', d: '약한 파편 9발이 넓게 퍼짐·근거리 강함, 6발 소진 시 장전', cd: .6, rad: 1.0, pierce: 0, col: 0xff7a4a },
   { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff }];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
@@ -471,10 +471,10 @@ const wCd = w => WEAPONS[w].cd * (1 - .06 * (wLvl(w) - 1));
 const wRad = w => WEAPONS[w].rad * (1 + .1 * (wLvl(w) - 1));
 const wPierce = w => w === 2 ? 2 + (wLvl(w) - 1) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
 const upCost = w => 30 * wLvl(w);
-function resolveShot(nx, ny, mult, pierce, pshot) {
+function resolveShot(nx, ny, mult, pierce, pshot, dmg) {
   let t0 = 0;
   for (let k = 0; k <= pierce; k++) {
-    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; if (pshot) h.pshot = true;
+    const h = pickHit(nx, ny, t0).best; if (!h) break; h.mult = mult; h.dmg = dmg || 1; if (pshot) h.pshot = true;
     const stop = applyHit(h); if (stop || h.kind === 'wall' || h.kind === 'core') break;
     t0 += h.t + .25;
   }
@@ -488,11 +488,20 @@ function renderBar() {
 function updBar() {
   const b = $('bot'); if (!b) return;
   [...b.children].forEach(d => { const i = +d.dataset.i; if (isNaN(i)) return; const W = WEAPONS[i];
-    let t = `${W.n} Lv${wLvl(i)}`;
+    let t = `[${i + 1}] ${W.n} Lv${wLvl(i)}`;
     if (i < 2) t += reloadT > 0 && reloadW === i ? ' 장전중…' : ` ${ammo[i]}/${MAG[i].n}`;
     else t += ammo[2] > 0 ? ` ${ammo[2]}발 · 방패 관통` : ` 게이지 ${Math.round(gauge)}%`;
     if (d.textContent !== t) d.textContent = t; });
 }
+window.addEventListener('keydown', e => {
+  if (!started || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === '1' || k === '2' || k === '3') { selectWeapon(+k - 1); }
+  else if (k === 'r') {
+    if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
+    if (reloadT <= 0 && ammo[cw] < MAG[cw].n) { reloadT = MAG[cw].rl; reloadW = cw; }
+  }
+});
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
@@ -508,23 +517,45 @@ function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => 
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
-    if (reloadT > 0) return;
+    if (reloadT > 0 && reloadW === cw) return;
     if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 탄약 없음<br>적을 명중해 게이지 충전'; flashT = .7; return; }
     ammo[cw]--; if (cw < 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl; reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
-  const { best, far } = pickHit(nx, ny);
-  const target = best ? (best.wp || best.p) : far;
-  if (TEST) { if (best) applyHit(best); return; }
-  const dist = ORIGIN.distanceTo(target);
-  flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / 55), hit: best, n: [nx, ny], mult: wRad(cw), pierce: wPierce(cw), ps: cw === 2 });
+  if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
+  const N = cw === 1 ? 9 : 1;
+  for (let q = 0; q < N; q++) {
+    let ax = nx, ay = ny;
+    if (cw === 1) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .16; ax += Math.cos(a) * r * .6; ay += Math.sin(a) * r; }
+    const { best, far } = pickHit(ax, ay);
+    const target = best ? (best.wp || best.p) : far;
+    const dist = ORIGIN.distanceTo(target);
+    const spd = cw === 0 ? 60 : cw === 1 ? 34 + Math.random() * 14 : 90;
+    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, n: [ax, ay], mult: cw === 1 ? .62 : wRad(cw), dmg: cw === 1 ? .5 : 1, pierce: wPierce(cw), ps: cw === 2, kind: cw });
+  }
 }
+const GEO = { cap: new THREE.CapsuleGeometry(.06, .34, 4, 8), pel: new THREE.SphereGeometry(.07, 8, 6), spike: new THREE.ConeGeometry(.09, 1.1, 8), trail: new THREE.CylinderGeometry(.03, .005, 1, 6, 1, true) };
+function mkProj(kind) {
+  const col = WEAPONS[kind].col, grp = new THREE.Group();
+  const bodyG = kind === 0 ? GEO.cap : kind === 1 ? GEO.pel : GEO.spike;
+  const body = new THREE.Mesh(bodyG, new THREE.MeshBasicMaterial({ color: kind === 2 ? 0xe8fbff : kind === 0 ? 0xfff3b0 : 0xffc890 }));
+  const halo = new THREE.Mesh(bodyG, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false })); halo.scale.setScalar(1.7);
+  const len = kind === 0 ? 1.4 : kind === 1 ? .9 : 3.2;
+  const tr = new THREE.Mesh(GEO.trail, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  tr.scale.set(kind === 2 ? 2.2 : 1, len, kind === 2 ? 2.2 : 1); tr.position.y = -len / 2 - (kind === 2 ? .45 : .15);
+  if (kind === 2) { body.rotation.x = 0; body.position.y = .1; halo.position.y = .1; }
+  grp.add(body, halo, tr); sc.add(grp); return grp;
+}
+const UPV = new THREE.Vector3(0, 1, 0), DIRV = new THREE.Vector3();
 function updateFlying(dt) {
   for (let i = flying.length - 1; i >= 0; i--) {
     const f = flying[i]; f.t += dt; const u = Math.min(1, f.t / f.dur);
-    proj.visible = true; proj.position.lerpVectors(f.from, f.to, u);
-    if (u >= 1) { if (f.n) resolveShot(f.n[0], f.n[1], f.mult, f.pierce, f.ps); else if (f.hit) applyHit(f.hit); flying.splice(i, 1); proj.visible = flying.length > 0; }
+    if (!f.m) { f.m = mkProj(f.kind || 0); DIRV.subVectors(f.to, f.from).normalize(); f.m.quaternion.setFromUnitVectors(UPV, DIRV); }
+    f.m.position.lerpVectors(f.from, f.to, u);
+    if (f.kind === 1) f.m.position.y -= 0.35 * u * u * 0.4;
+    if (u >= 1) { if (f.n) resolveShot(f.n[0], f.n[1], f.mult, f.pierce, f.ps, f.dmg); else if (f.hit) applyHit(f.hit); sc.remove(f.m); flying.splice(i, 1); }
   }
+  proj.visible = false;
 }
 
 // ---------- 붕괴와 결과 ----------

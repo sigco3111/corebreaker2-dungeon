@@ -1,0 +1,8 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585 src="../index.html?visit=1&g=knight,barbarian,mage"></iframe><script>
+const f=document.getElementById('f');setTimeout(()=>{const d=f.contentDocument,w=f.contentWindow,C=w.__cb2,o=[];
+d.getElementById('go').click();
+const key=k=>w.dispatchEvent(new w.KeyboardEvent('keydown',{key:k}));
+key('2');o.push('cw after 2='+C.cw);key('3');o.push('cw after 3='+C.cw);key('1');o.push('cw='+C.cw);
+C.update(1);C.fire(0,-.05);C.update(1);C.fire(0,-.05);o.push('ammo '+C.ammo[0]);key('r');o.push('reloadT '+C.reloadT);C.update(2);o.push('ammo after R '+C.ammo[0]);
+key('3');const a=C.ammo[2];C.ammo[2]=0;key('r');o.push('R on pierce reloadT '+C.reloadT+' ammo2 '+C.ammo[2]);
+document.title='keys:'+o.join(' | ');},2500);</script>

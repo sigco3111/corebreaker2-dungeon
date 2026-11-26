@@ -1,0 +1,15 @@
+<!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
+const W=+(location.hash.slice(1)||0);const f=document.getElementById('f');f.src='../index.html?visit=1&g=skelwar,knight,mage&w='+W;
+setTimeout(()=>{const d=f.contentDocument;d.getElementById('go').click();
+const C=f.contentWindow.__cb2;C.selectWeapon(W);
+if(W==2){ // shield pierce check
+ const g=C.GS[0];g.gmode='block';const res={};
+ let found=null;for(let x=-1;x<=1&&!found;x+=.01)for(let y=-.6;y<=.6;y+=.01){const h=C.pickHit(x,y).best;if(h&&h.kind=='knight'&&h.g===g){found=[x,y];break;}}
+ res.found=found;if(found){const pts=()=>Object.values(g.PARTS).map(p=>p.hp).join(',');const d0=C.deflects;res.hp0=pts();
+ C.resolveShot(found[0],found[1],1,0,false,1);res.hpAfterBasic=pts();res.deflectsAfterBasic=C.deflects-d0;
+ C.resolveShot(found[0],found[1],1,2,true,1);res.hpAfterPierce=pts();res.deflectsAfterPierce=C.deflects-d0;}
+ document.title='pierce:'+JSON.stringify(res);
+}
+setInterval(()=>{C.update(.7);C.ammo[0]=12;C.ammo[1]=6;C.ammo[2]=3;C.fire(.0,-.05);},120);
+},2500);
+</script>
