@@ -313,11 +313,11 @@ function block(x, z, w, d, h, y0, tint) {
   sc.add(m);
 }
 function platform(side, h) {
-  const w = 2.8, d = 4.4, zc = -5.0 - R() * 3.5, x = side * (6.1 - w / 2 - 0.05);
+  const w = 2.4, d = 4.0, zc = -6.2 - R() * 2.6, x = side * (6.1 - w / 2 - 0.05);
   block(x, zc, w, d, h, 0, [0, 0, 0.03 * side]);
   const n = 3 + Math.floor(R() * 3); const pp = [];
   for (let k = 0, t = 0; k < n && t < 60; t++) {
-    const px = x + (R() * 2 - 1) * (w / 2 - .55), pz = zc + (R() * 2 - 1) * (d / 2 - .55);
+    const px = x + (R() * 2 - 1) * (w / 2 - .78), pz = zc + (R() * 2 - 1) * (d / 2 - .55);
     const nm = T.p[Math.floor(R() * T.p.length)]; const dd = P[nm]; if (!dd) continue; if (pp.some(q => Math.hypot(q[0] - px, q[1] - pz) < .95)) continue;
     pp.push([px, pz]); put(nm, px, pz, .8 + R() * .25, Math.floor(R() * 4) * Math.PI / 2, h, true); k++;
   }
@@ -352,6 +352,20 @@ for (let k = 0, t = 0; k < cnt && t < 400; t++) {
 }
 { const LOW = ['box_small', 'coin_stack_medium', 'bottle_A_green', 'plate_food_A', 'stool', 'candle_triple', 'barrel_small'];
   for (let k = 0, t = 0; k < 4 && t < 100; t++) { const x = (R() * 2 - 1) * 5, z = -2.4 - R() * 2.0; if (Math.abs(x) < 2.4) continue; const nm = LOW[Math.floor(R() * LOW.length)]; const d = P[nm]; if (!d) continue; const rad = Math.max(d.size[0], d.size[2]) * d.pitch * .6; if (placed.some(p => Math.hypot(p[0] - x, p[1] - z) < p[2] + rad)) continue; placed.push([x, z, rad]); put(nm, x, z, 1.0, Math.floor(R() * 4) * Math.PI / 2, 0, true); k++; } }
+// 안전망: 수호자의 이동 범위 안에서 장비/코어를 가리는 소품은 제거(조준 시야 확보)
+{
+  const cp = cam.position.clone(); let removed = 0;
+  for (let pi = props.length - 1; pi >= 0; pi--) {
+    const e = props[pi]; let blocked = false;
+    for (const g of GS) { if (blocked) break;
+      for (let o = -g.slot.amp; o <= g.slot.amp + 1e-6 && !blocked; o += .4) for (const yy of [.15, .4, .7, .95]) for (const dx of [-.5, 0, .5]) {
+        const P_ = new THREE.Vector3(g.slot.x + o + dx, g.slot.H * yy, g.slot.z); const dist = P_.distanceTo(cp);
+        const rr_ = new THREE.Ray(cp, P_.clone().sub(cp).normalize()); const hit = rr_.intersectBox(e.bb, new THREE.Vector3());
+        if (hit && hit.distanceTo(cp) < dist - .25) { blocked = true; break; } } }
+    if (blocked) { e.dead = true; e.mesh.visible = false; props.splice(pi, 1); removed++; }
+  }
+  window.__removedProps = removed;
+}
 const TOTAL_PROPS = props.length;
 
 // ---------- 사격 ----------
