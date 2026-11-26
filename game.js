@@ -291,7 +291,7 @@ function makeGuardian(typeKey, slot, idx) {
   const keys = []; // 방문마다 구성이 바뀜: 기사/야만전사/마법사를 섞어서 3체
   const SIG = { 1: 'barbarian', 2: 'knight', 3: 'skelmage', 4: 'knight', 5: 'rogue', 6: 'skelmage', 7: 'rogue', 8: 'barbarian' }[ZONE];   // 구역별 대표 수호자(약 절반 확률)
   const ZPOOL = { 2: ['knight', 'skelwar', 'barbarian'], 3: ['skelwar', 'skelmage', 'skelrogue', 'skelminion'], 5: ['rogue', 'skelrogue', 'mage', 'skelmage'], 6: ['skelwar', 'skelmage', 'skelrogue', 'skelminion'], 7: ['rogue', 'skelrogue', 'mage', 'skelmage'] }[ZONE] || GOKEYS;   // 구역 테마: 갑옷/해골/민첩 구역
-  for (let i = 0; i < 3; i++) keys.push(R() < .4 ? SIG : ZPOOL[Math.floor(R() * ZPOOL.length)]);
+  for (let i = 0; i < 3; i++) { let k = R() < .4 ? SIG : ZPOOL[Math.floor(R() * ZPOOL.length)]; for (let t = 0; t < 6 && keys.includes(k) && ZPOOL.some(p => !keys.includes(p)); t++) k = ZPOOL[Math.floor(R() * ZPOOL.length)]; keys.push(k); }
   if (q.get('g')) q.get('g').split(',').forEach((k, i) => { if (GTYPES[k]) keys[i] = k; });   // 테스트용 강제 지정
   if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
