@@ -204,14 +204,14 @@ for (let i = 0; i < nt; i++) { const side = R() < .5 ? -1 : 1; const z = -3 - R(
 
 // ---------- 수호자들 (기사, 야만전사, 마법사) ----------
 const GTYPES = {
-  knight: { name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
-  barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
-  mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  rogue: { hs: .95, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
-  skelwar: { hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
-  skelmage: { name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
-  skelrogue: { hs: .86, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
-  skelminion: { hs: .72, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
+  knight: { go: 1, gb: 1.2, name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
+  barbarian: { go: 1.2, gb: 0.8, name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
+  mage: { go: 0.8, gb: 1, name: '마법사', d: GM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
+  rogue: { go: 0.7, gb: 0.7, hs: .95, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
+  skelwar: { go: 1, gb: 1.3, hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
+  skelmage: { go: 0.8, gb: 1, name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
+  skelrogue: { go: 0.7, gb: 0.7, hs: .86, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
+  skelminion: { go: 1.3, gb: 0.6, hs: .72, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
 const SLOTS = [
   { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
   { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
@@ -586,7 +586,7 @@ function updateCollapse(g, dt) {
 }
 function updateGuardian(g, dt) {
   g.gT += dt; g.age = (g.age || 0) + dt;
-  const gopen = g.slot.gopen * D_OPEN, gblock = g.slot.gblock * D_BLOCK;
+  const gopen = g.slot.gopen * D_OPEN * (GTYPES[g.key].go || 1), gblock = g.slot.gblock * D_BLOCK * (GTYPES[g.key].gb || 1);
   if (g.gmode === 'open' && g.gT > gopen) { g.gmode = 'warn'; g.gT = 0; sfx('warn'); }
   else if (g.gmode === 'warn' && g.gT > GWARN) { g.gmode = 'block'; g.gT = 0; }
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
