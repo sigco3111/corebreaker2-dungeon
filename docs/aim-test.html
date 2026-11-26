@@ -1,6 +1,6 @@
 <!doctype html><title>run</title><style>body{margin:0;overflow:hidden}iframe{border:0}</style><iframe id=f width=1266 height=585></iframe><script>
 const M=location.hash.slice(1)||'open';const f=document.getElementById('f');f.src='../index.html?visit=1&g=knight,barbarian,mage&w='+(M=='pierce'?2:0);
-setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;d.getElementById('go').click();const C=w.__cb2;const g=C.GS[1];
+setTimeout(()=>{const w=f.contentWindow,d=f.contentDocument;if(M=='off')w.__noHL=true;d.getElementById('go').click();const C=w.__cb2;const g=C.GS[1];
 const cv=d.querySelector('canvas');const stats={n:0,match:0,tagged:0};
 const key=Object.keys(g.PARTS).find(c=>g.marks[c]);
 setInterval(()=>{if(M=='pierce'){g.gmode='block';g.gT=0;}
