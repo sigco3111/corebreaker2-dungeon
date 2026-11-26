@@ -1,0 +1,11 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585></iframe><script>
+const H=location.hash.slice(1).split('&');const W=+(H[0]||0);const f=document.getElementById('f');f.src='../index.html?visit=3&zone='+(H[1]||1)+'&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const T=C.THREE;C.eco.save.wu=[1,1,1,1,1];C.selectWeapon(W);
+let vox0=0;C.props.forEach(e=>vox0+=e.count);const p0=C.props.filter(e=>!e.dead).length;
+const proj=p=>p.clone().project(C.cam);
+function aimProp(){for(const e of C.props){if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return [v.x,v.y];}}return null;}
+let shots=0,t=0;const need=+(H[2]||10);
+for(let s=0;s<30*60&&shots<need;s++){C.update(1/30);t+=1/30;const n0=C.flying.length;const a=aimProp();if(!a)break;C.fire(a[0],a[1]);if(C.flying.length>n0)shots++;}
+for(let s=0;s<60;s++)C.update(1/30);
+let vox1=0;C.props.forEach(e=>vox1+=e.count);
+document.title='done:'+JSON.stringify({w:W,shots,simT:+t.toFixed(1),propsBroken:C.broken,propsAliveBefore:p0,voxRemoved:vox0-vox1,coins:C.coins,sg:C.sg.join('/')});}catch(e){document.title='err:'+e.message+' '+(e.stack||'').split('\n')[1];}},9000);</script>

@@ -6,8 +6,8 @@ const TEST = STAGE !== 0;
 let summoned = false;
 const SUMMON = q.get('mode') === 'summon' || (!TEST && q.get('mode') !== 'classic'); summoned = !SUMMON;   // 새 루프: 정지 소품 파괴 -> 소환 게이지 -> 수호자 무리
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
-function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl) || o.wl.length !== 3) o.wl = [1, 1, 1]; if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
@@ -494,7 +494,7 @@ function clearOccluders(fx) {
   window.__removedProps = (window.__removedProps || 0) + removed; return removed;
 }
 if (!SUMMON) clearOccluders(false);
-let TOTAL_PROPS = props.length;
+let TOTAL_PROPS = props.length; let autoCleared = 0;
 // ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
 const SG_NEED = Math.max(8, Math.ceil(TOTAL_PROPS * .45)); let sgVal = 0;
 const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:9.5vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
@@ -507,7 +507,7 @@ if (SUMMON) {
 function summonGuardians() {
   if (summoned) return; summoned = true;
   for (const g of GS) { if (g.kstate !== 'dormant') continue; g.kstate = 'guard'; g.K.mesh.visible = true; g.aura.visible = true; for (const c in g.marks) g.marks[c].sp.visible = true; }
-  { const n_ = clearOccluders(true); TOTAL_PROPS -= n_; }
+  { const n_ = clearOccluders(true); autoCleared += n_; }
   for (const g of GS) for (const c in g.marks) relocateMark(g, c);
   sfx('warn'); shake = Math.max(shake, .3); setStatus(); updSG(); flashText('수호자 출현!<br>장비를 먼저 부숴라');
 }
@@ -551,13 +551,14 @@ function pickHit(nx, ny, t0 = 0) {
   }
   return { best, far: ray.at(30, new THREE.Vector3()) };
 }
-const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }];
-const ammo = [12, 6, 3]; let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
+const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }, { n: 4, rl: 2.2 }, { n: 6, rl: 1.8 }];
+const magN = w => { const L = (save.wl[w] || 1); const b = MAG[w].n; return w === 0 ? b + (L >= 7 ? 2 : 0) + (L >= 10 ? 2 : 0) : w === 1 ? b + (L >= 7 ? 1 : 0) + (L >= 10 ? 2 : 0) : w === 2 ? b + (L >= 4 ? 1 : 0) + (L >= 8 ? 1 : 0) : w === 3 ? b + (L >= 10 ? 1 : 0) : b + (L >= 10 ? 2 : 0); };
+const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
-  if (ammo[2] >= MAG[2].n) return;
-  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1) * (ZR.gg || 1);
-  if (gauge >= GAUGE_MAX) { gauge = 0; ammo[2] = MAG[2].n + (wLvl(2) >= 4 ? 1 : 0); $('tc').innerHTML = '게이지 완충!<br>관통탄 장전'; flashT = .9; sfx('warn'); }
+  if (ammo[2] >= magN(2)) return;
+  gauge += (h.pshot ? 6 : 14) * (h.dmg || 1) * (ZR.gg || 1) * (wLvl(2) >= 7 ? 1.25 : 1);
+  if (gauge >= GAUGE_MAX) { gauge = 0; ammo[2] = magN(2); $('tc').innerHTML = '게이지 완충!<br>관통탄 장전'; flashT = .9; sfx('warn'); }
 }
 function applyHit(h) {
   hitsLanded++;
@@ -566,17 +567,38 @@ function applyHit(h) {
     const q = h.wp || h.p; burst(q.x, q.y, q.z, 150, 190, 255, 8, 4, .05); shake = Math.max(shake, .1);
     $('tc').innerHTML = '수호자 방어!<br>막혔다'; flashT = .6; deflects++; sfx('block'); return 'stop';
   }
-  if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); }
+  if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); if (h.wt === 4) chainProps(h); }
   else if (h.kind === 'knight') { if (!TEST) { const q = h.wp || h.p; burst(q.x, q.y, q.z, 255, 235, 150, 6, 3.5, .04); } hitKnight(h); }
   else if (h.kind === 'core') { if (h.g.kstate === 'exposed') collapse(h.g); }
   else if (h.kind === 'wall') burst(h.p.x, h.p.y, h.p.z, 255, 220, 120, 4, 2, .03);
+  if (h.wt === 3 && (h.kind === 'prop' || h.kind === 'knight' || h.kind === 'wall')) blast(h.wp || h.p);
 }
+// 폭발탄: 착탄 지점 주변 소품을 한꺼번에 부수고, 수호자 장비에는 약한 피해(방어 중이면 제외)
+function blast(p) {
+  const R = 1.3 + .08 * (effLv(3) - 1) + (wLvl(3) >= 7 ? .15 : 0);
+  shockwave(p); burst(p.x, p.y, p.z, 255, 150, 40, 24, 7, .09); shake = Math.max(shake, .2); sfx('block');
+  for (const e of props.slice()) { if (e.dead) continue; const c = e.bb.clone().expandByScalar(R); if (!c.containsPoint(p)) continue; damageProp(e, p, R * .75); }
+  for (const g of GS) { if (g.kstate !== 'guard' || g.gmode === 'block') continue; const K = g.K, gb = g.bob || 0; let bi = -1, bd = R * R;
+    for (let i = 0; i < K.n; i++) { if (!K.alive[i]) continue; const c = K.cat[i]; if (!g.PARTS[c] || !g.PARTS[c].alive) continue; const dx = K.pos[i * 3] + g.off - p.x, dy = K.pos[i * 3 + 1] + gb - p.y, dz = K.pos[i * 3 + 2] - p.z; const d = dx * dx + dy * dy + dz * dz; if (d < bd) { bd = d; bi = i; } }
+    if (bi >= 0) { const c = K.cat[bi], pt = g.PARTS[c]; pt.hp -= .5; if (pt.hp <= 0) breakPart(g, c); else relocateMark(g, c); } }
+}
+// 연쇄탄: 맞은 소품 가까이의 다른 소품으로 튀어 피해
+function chainProps(h) {
+  const n = 2 + Math.floor((effLv(4) - 1) / 3) + (wLvl(4) >= 7 ? 1 : 0); const near = [];
+  for (const e of props) { if (e.dead || e === h.e) continue; const c = e.bb.getCenter(new THREE.Vector3()); const d = c.distanceTo(h.p); if (d < 2.8) near.push([d, e, c]); }
+  near.sort((a, b) => a[0] - b[0]);
+  for (const [, e, c] of near.slice(0, n)) { burst(c.x, c.y, c.z, 190, 160, 255, 8, 4, .05); const i = lookupVoxel(e, c, 2); const pp = i >= 0 ? new THREE.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]) : c; damageProp(e, pp, .7); }
+}
+
 const ORIGIN = new THREE.Vector3(.8, 1.6, 10.4);
 // ---------- 무기 3종 (기본탄 / 범위탄 / 관통탄), 각 5단계 강화 ----------
 const WEAPONS = [
   { n: '기본탄', d: '12발 연사, 소진 시 장전', cd: .22, rad: 1, pierce: 0, col: 0xffd54a },
   { n: '산탄', d: '약한 파편 9발이 넓게 퍼짐·근거리 강함, 모자·지팡이·석궁에 1.6배, 6발 소진 시 장전', cd: .6, rad: 1.0, pierce: 0, col: 0xff7a4a },
-  { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 방패 장비에 1.5배, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff }];
+  { n: '관통탄', d: '방패 관통·여러 물체 뚫음, 방패 장비에 1.5배, 3발. 적 명중 게이지 100%면 장전', cd: .38, rad: .9, pierce: 2, col: 0x6ad0ff },
+  { n: '폭발탄', d: '착탄 지점이 폭발: 반경 안의 소품을 한꺼번에 부수고 수호자 장비에 약한 피해. 4발, 느린 연사 (대량 파괴)', cd: .9, rad: 1, pierce: 0, col: 0xff5030, unlock: 400 },
+  { n: '연쇄탄', d: '소품에 맞으면 가까운 소품으로 튀어 피해를 줌(2회~). 6발 (연쇄 파괴)', cd: .5, rad: 1, pierce: 0, col: 0xa27bff, unlock: 600 }];
+const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 +2', 'Lv7 게이지 획득 +25% · Lv8 탄창 +1', 'Lv7 폭발 반경 +15% · Lv10 탄창 +1', 'Lv7 튀는 횟수 +1 · Lv10 탄창 +2'];
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
@@ -599,30 +621,30 @@ function resolveShot(nx, ny, mult, pierce, pshot, dmg) { applyShot(collectShot(n
 function selectWeapon(w) { cw = w; proj.material.color.setHex(WEAPONS[w].col); renderBar(); }
 function renderBar() {
   const b = $('bot'); b.innerHTML = '';
-  WEAPONS.forEach((W, i) => { const d = document.createElement('div'); d.textContent = `${W.n} Lv${wLvl(i)}`; d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.style.display = 'inline-block'; d.style.margin = '0 .6vmin'; d.style.borderColor = i === cw ? '#ffd54a' : 'rgba(255,255,255,.25)'; d.style.opacity = i === cw ? 1 : .65; d.style.background = i === cw ? 'rgba(80,60,0,.7)' : 'rgba(0,0,0,.5)'; d.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); selectWeapon(i); }; d.dataset.i = i; b.appendChild(d); });
+  WEAPONS.forEach((W, i) => { if (!save.wu[i]) return; const d = document.createElement('div'); d.textContent = `${W.n} Lv${wLvl(i)}`; d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.style.display = 'inline-block'; d.style.margin = '0 .6vmin'; d.style.borderColor = i === cw ? '#ffd54a' : 'rgba(255,255,255,.25)'; d.style.opacity = i === cw ? 1 : .65; d.style.background = i === cw ? 'rgba(80,60,0,.7)' : 'rgba(0,0,0,.5)'; d.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); selectWeapon(i); }; d.dataset.i = i; b.appendChild(d); });
   updBar();
 }
 function updBar() {
   const b = $('bot'); if (!b) return;
   [...b.children].forEach(d => { const i = +d.dataset.i; if (isNaN(i)) return; const W = WEAPONS[i];
     let t = `[${i + 1}] ${W.n} Lv${wLvl(i)}`;
-    if (i < 2) t += reloadT > 0 && reloadW === i ? ' 장전중…' : ` ${ammo[i]}/${MAG[i].n}`;
+    if (i !== 2) t += reloadT > 0 && reloadW === i ? ' 장전중…' : ` ${ammo[i]}/${magN(i)}`;
     else t += ammo[2] > 0 ? ` ${ammo[2]}발 · 방패 관통` : ` 게이지 ${Math.round(gauge)}%`;
     if (d.textContent !== t) d.textContent = t; });
 }
 window.addEventListener('keydown', e => {
   if (!started || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
-  if (k === '1' || k === '2' || k === '3') { selectWeapon(+k - 1); }
+  if (k >= '1' && k <= '5') { const w = +k - 1; if (save.wu[w]) selectWeapon(w); else { $('tc').innerHTML = WEAPONS[w].n + ' 잠김<br>결과 화면 상점에서 해금'; flashT = .9; } }
   else if (k === 'r') {
     if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
-    if (reloadT <= 0 && ammo[cw] < MAG[cw].n) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
+    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
   }
 });
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
@@ -630,13 +652,13 @@ function recHTML() {
   return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
-function bindShop(box) { bindRec(box); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
+function bindShop(box) { bindRec(box); box.querySelectorAll('.unl').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (!save.wu[w] && save.coins >= WEAPONS[w].unlock) { save.coins -= WEAPONS[w].unlock; save.wu[w] = 1; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
     if (reloadT > 0 && reloadW === cw) return;
     if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 탄약 없음<br>적을 명중해 게이지 충전'; flashT = .7; return; }
-    ammo[cw]--; if (cw < 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
+    ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
@@ -648,7 +670,7 @@ function fire(nx, ny) {
     const target = best ? (best.wp || best.p) : far;
     const dist = ORIGIN.distanceTo(target);
     const spd = cw === 0 ? 60 : cw === 1 ? 34 + Math.random() * 14 : 90;
-    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, hits: collectShot(ax, ay, cw === 1 ? .62 : wRad(cw), wPierce(cw), cw === 2, cw === 1 ? .5 : 1), kind: cw });
+    flying.push({ from: ORIGIN.clone(), to: target.clone(), t: 0, dur: Math.max(.08, dist / spd), hit: best, hits: collectShot(ax, ay, cw === 1 ? .62 : wRad(cw), wPierce(cw), cw === 2, cw === 1 ? .5 : 1).map(h => { h.wt = cw; return h; }), kind: cw });
   }
 }
 const GEO = { cap: new THREE.CapsuleGeometry(.06, .34, 4, 8), pel: new THREE.SphereGeometry(.07, 8, 6), spike: new THREE.ConeGeometry(.09, 1.1, 8), trail: new THREE.CylinderGeometry(.03, .005, 1, 6, 1, true) };
@@ -721,7 +743,7 @@ function showResult() {
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
   const ov = $('ov'); ov.style.display = 'flex';
-  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}/${TOTAL_PROPS}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
+  ov.firstElementChild.innerHTML = `<h1>구역 ${ZONE} ${T.n} 클리어</h1><p>코인 ${totalCoins}<br>부순 소품 ${propsBroken}개${autoCleared ? ` · 자동 정리 ${autoCleared}개(소환 때 시야를 가려 치운 것, 코인 없음)` : ''}<br>걸린 시간 ${Math.round(elapsed)}초 · 명중률 ${acc}%</p><div class="shop"></div><p style="opacity:.7;font-size:13px">다음 방문에서는 수호자 구성과 소품 위치가 바뀝니다.</p><button id="nextz" class="alt">다음 구역: ${THEMES[nextZone(ZONE) - 1].n}</button> <button id="again" class="alt">다시 도전 (${VISIT + 1}번째 방문)</button>`;
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
   $('nextz').onclick = () => { save.zone = nextZone(ZONE); writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); };
   $('again').onclick = () => { save.visits[ZONE] = VISIT; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); location.href = u.toString(); };
@@ -774,7 +796,7 @@ const shakeBase = cam.position.clone();
 function update(dt) {
   if (chainT > 0) chainT -= dt; updateShock(dt); updateFlash(dt);
   if (cooldown > 0) cooldown -= dt;
-  if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = MAG[reloadW].n; } }
+  if (reloadT > 0) { reloadT -= dt; if (reloadT <= 0) { ammo[reloadW] = magN(reloadW); } }
   updBar();
   if (started && !GS.every(q => q.kstate === 'done')) elapsed += dt;
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) setStatus(); }
