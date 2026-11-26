@@ -211,7 +211,7 @@ function downsample(vox) {   // 2x2x2 묶음: 부위(장비)가 있으면 그 �
   for (const e of m.values()) {
     let cat = 0, best = 0; for (const c in e.w) { if (+c !== 0 && e.w[c] >= best) { best = e.w[c]; cat = +c; } }
     if (cat === 0 && e.w[0]) cat = 0;
-    out.push([e.x, e.y, e.z, e.r / e.n, e.g / e.n, e.b / e.n, cat]);
+    const lift = cat > 0 ? 1.3 : 1; out.push([e.x, e.y, e.z, Math.min(255, e.r / e.n * lift), Math.min(255, e.g / e.n * lift), Math.min(255, e.b / e.n * lift), cat]);   // 장비는 밝게 해서 구분
   }
   return out;
 }
