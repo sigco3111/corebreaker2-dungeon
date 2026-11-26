@@ -431,9 +431,9 @@ function pickHit(nx, ny, t0 = 0) {
   for (const e of props) { if (e.dead) continue; const h = marchVoxels(e, ray); if (h && (!best || h.t < best.t)) best = { kind: 'prop', e, ...h }; }
   for (const g of GS) {
     if (g.kstate === 'collapse' || g.kstate === 'done') continue;
-    const kr = new THREE.Ray(ray.origin.clone().sub(new THREE.Vector3(g.off, 0, 0)), ray.direction); const h = marchVoxels(g.K, kr);
-    if (h && (!best || h.t < best.t)) best = { kind: 'knight', g, ...h, wp: h.p.clone().add(new THREE.Vector3(g.off, 0, 0)) };
-    if (g.kstate === 'exposed') { const sp = new THREE.Sphere(g.CORE.clone().add(new THREE.Vector3(g.off, 0, 0)), .42 * Math.max(.9, g.rel)); const pt = ray.intersectSphere(sp, new THREE.Vector3()); if (pt) { const t = pt.distanceTo(ray.origin); if (!best || t < best.t + .05) best = { kind: 'core', g, t, p: pt }; } }
+    const gb = g.bob || 0; const kr = new THREE.Ray(ray.origin.clone().sub(new THREE.Vector3(g.off, gb, 0)), ray.direction); const h = marchVoxels(g.K, kr);
+    if (h && (!best || h.t < best.t)) best = { kind: 'knight', g, ...h, wp: h.p.clone().add(new THREE.Vector3(g.off, gb, 0)) };
+    if (g.kstate === 'exposed') { const sp = new THREE.Sphere(g.CORE.clone().add(new THREE.Vector3(g.off, gb, 0)), .42 * Math.max(.9, g.rel)); const pt = ray.intersectSphere(sp, new THREE.Vector3()); if (pt) { const t = pt.distanceTo(ray.origin); if (!best || t < best.t + .05) best = { kind: 'core', g, t, p: pt }; } }
   }
   // 비파괴 구조물(바닥, 좌우 벽, 뒷벽): 닿으면 투사체가 거기서 멈추고 불꽃이 튄다
   const planes = [['y', 0.02, 1], ['x', -6.3, -1], ['x', 6.3, 1], ['z', -12.3, -1]];
@@ -600,8 +600,9 @@ function updateGuardian(g, dt) {
   else if (g.gmode === 'block' && g.gT > gblock) { g.gmode = 'open'; g.gT = 0; }
   const sp = g.gmode === 'open' ? 1 : g.gmode === 'warn' ? .35 : 0;
   g.ph += dt * D_SPEED * (2 * Math.PI / g.slot.per) * sp; g.off = g.slot.x + g.slot.amp * Math.sin(g.ph);
-  g.K.mesh.position.x = g.off; for (const c in g.marks) { const m = g.marks[c]; m.sp.position.set(m.x + g.off, m.y + .04, m.z + .25); m.sp.material.opacity = g.gmode === 'block' ? .25 : .55 + .35 * Math.sin(g.age * 6); m.sp.scale.setScalar(.3 + .04 * Math.sin(g.age * 6)); } g.sh.position.x = g.off; g.aura.position.x = g.off;
-  if (g.coreMesh) { g.coreMesh.position.x = g.off; g.coreMesh.userData.light.position.x = g.CORE.x + g.off; }
+  { const tb = Math.abs(Math.sin(g.ph * 5)) * .11 * sp; g.bob = (g.bob || 0) + (tb - (g.bob || 0)) * Math.min(1, dt * 14); }
+  g.K.mesh.position.set(g.off, g.bob, 0); for (const c in g.marks) { const m = g.marks[c]; m.sp.position.set(m.x + g.off, m.y + .04 + g.bob, m.z + .25); m.sp.material.opacity = g.gmode === 'block' ? .25 : .55 + .35 * Math.sin(g.age * 6); m.sp.scale.setScalar(.3 + .04 * Math.sin(g.age * 6)); } g.sh.position.x = g.off; g.aura.position.x = g.off;
+  if (g.coreMesh) { g.coreMesh.position.set(g.off, g.bob, 0); g.coreMesh.userData.light.position.set(g.CORE.x + g.off, g.CORE.y + .2 + g.bob, g.CORE.z + 1.2); }
   g.aura.material.opacity = g.gmode === 'block' ? .28 : g.gmode === 'warn' ? .1 + .08 * Math.sin(g.gT * 40) : 0;
 }
 const t0 = performance.now(); let elapsed = 0;
