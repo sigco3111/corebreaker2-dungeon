@@ -621,17 +621,24 @@ function showResult() {
 const cross = $('cross');
 function ndc(e) { const r = canvas.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; }
 let crossTag = null;
+let lastAim = null;
 function aimInfo(nx, ny) {
   const h = pickHit(nx, ny).best; if (!h) return null;
-  if (h.kind === 'core') return h.g.gmode === 'block' ? ['#6ab0ff', '방어중'] : ['#ff5a5a', '코어!'];
-  if (h.kind === 'knight') { const c = h.g.K.cat[h.i], P = h.g.PARTS[c]; if (P && P.alive) return h.g.gmode === 'block' ? ['#6ab0ff', '방어중'] : ['#5aff7a', P.name]; return ['#aaaaaa', '몸통(단단)']; }
+  const pierceSel = cw === 2;
+  if (h.kind === 'core') return h.g.gmode === 'block' && !pierceSel ? ['#6ab0ff', '방어중'] : ['#ff5a5a', h.g.gmode === 'block' ? '코어 (관통!)' : '코어!'];
+  if (h.kind === 'knight') { const c = h.g.K.cat[h.i], P = h.g.PARTS[c];
+    if (P && P.alive) { if (h.g.gmode === 'block') return pierceSel ? ['#6ae0ff', P.name + ' (방패 관통!)'] : ['#6ab0ff', '방어중']; return ['#5aff7a', P.name]; }
+    return ['#aaaaaa', '몸통(단단)']; }
   return null;
 }
-function moveCross(e) {
-  const [nx, ny, px, py] = ndc(e); cross.style.left = (px * 100) + '%'; cross.style.top = (py * 100) + '%';
+function showAim() {
+  if (!lastAim) return;
   if (!crossTag) { crossTag = document.createElement('div'); crossTag.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:.4vmin;white-space:nowrap;font-size:2vmin;font-weight:800;text-shadow:0 1px 3px #000'; cross.appendChild(crossTag); }
-  const a = aimInfo(nx, ny);
-  cross.style.borderColor = a ? a[0] : '#fff'; crossTag.style.color = a ? a[0] : '#fff'; crossTag.textContent = a ? a[1] : '';
+  const a = aimInfo(lastAim[0], lastAim[1]);
+  cross.style.borderColor = a ? a[0] : '#fff'; crossTag.style.color = a ? a[0] : '#fff'; if (crossTag.textContent !== (a ? a[1] : '')) crossTag.textContent = a ? a[1] : '';
+}
+function moveCross(e) {
+  const [nx, ny, px, py] = ndc(e); cross.style.left = (px * 100) + '%'; cross.style.top = (py * 100) + '%'; lastAim = [nx, ny]; showAim();
 }
 canvas.addEventListener('pointermove', moveCross);
 canvas.addEventListener('pointerdown', e => { e.preventDefault(); if (!started) return; moveCross(e); const [nx, ny] = ndc(e); fire(nx, ny); });
@@ -653,7 +660,7 @@ function update(dt) {
   updBar();
   if (started && !GS.every(q => q.kstate === 'done')) elapsed += dt;
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) setStatus(); }
-  updateFlying(dt); updateDebris(dt);
+  updateFlying(dt); updateDebris(dt); showAim();
   for (const g of GS) { if (MOVE && started && (g.kstate === 'guard' || g.kstate === 'exposed')) updateGuardian(g, dt); if (g.kstate === 'collapse') updateCollapse(g, dt); if (g.coreMesh && g.kstate === 'exposed') { const p = 1 + Math.sin(performance.now() / 160) * .06; g.coreMesh.scale.setScalar(p); } }
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.6); cam.position.set(shakeBase.x + (Math.random() - .5) * shake * .25, shakeBase.y + (Math.random() - .5) * shake * .2, shakeBase.z); } else cam.position.copy(shakeBase);
 }
@@ -692,6 +699,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
+window.__cb2 = { projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
