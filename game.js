@@ -185,9 +185,9 @@ const GTYPES = {
   barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } } };
 const SLOTS = [
-  { x: -2.9, z: -6.5, H: 2.3, amp: .9, per: 6.4, gopen: 2.4, gblock: 1.2 },
-  { x: 0, z: -7.6, H: 2.5, amp: .9, per: 7.6, gopen: 3.0, gblock: 1.4 },
-  { x: 2.9, z: -6.5, H: 2.3, amp: .9, per: 5.6, gopen: 2.0, gblock: 1.1 }];
+  { x: -2.4, z: -6.5, H: 2.3, amp: .8, per: 6.4, gopen: 2.4, gblock: 1.2 },
+  { x: 0, z: -7.6, H: 2.5, amp: .6, per: 7.6, gopen: 3.0, gblock: 1.4 },
+  { x: 2.4, z: -6.5, H: 2.3, amp: .8, per: 5.6, gopen: 2.0, gblock: 1.1 }];
 const GOKEYS = ['knight', 'barbarian', 'mage'];
 const GWARN = .5;
 const GS = [];
@@ -304,7 +304,7 @@ function hitKnight(h) {
 }
 
 // 구조물 (측면 단 등)
-const obst = [[-2.9, -6.5, 1.9], [0, -7.6, 1.9], [2.9, -6.5, 1.9], [0, -4.2, 2.4]];
+const obst = [[-2.4, -6.5, 1.9], [0, -7.6, 1.9], [2.4, -6.5, 1.9], [0, -4.2, 2.4]];
 function block(x, z, w, d, h, y0, tint) {
   const pt = 0.2, nx = Math.round(w / pt), nz = Math.round(d / pt), ny = Math.round(h / pt); const cells = [];
   for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) { const edge = i == 0 || i == nx - 1 || k == 0 || k == nz - 1 || j == ny - 1; if (!edge) continue; cells.push([x - w / 2 + (i + .5) * pt, y0 + (j + .5) * pt, z - d / 2 + (k + .5) * pt, j == ny - 1]); }
