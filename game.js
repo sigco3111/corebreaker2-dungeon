@@ -49,7 +49,7 @@ sc.add(new THREE.HemisphereLight(0xb8b0d0, 0x3a3040, 1.15));
 const dl = new THREE.DirectionalLight(0xfff0d8, 1.4); dl.position.set(2, 6, 4); sc.add(dl);
 
 // ---------- 데이터 ----------
-const [P, KD, GB, GM, GR] = await Promise.all([fetch('props.json').then(r => r.json()), fetch('knight_demo.json').then(r => r.json()), fetch('guardians/barbarian.json').then(r => r.json()), fetch('guardians/mage.json').then(r => r.json()), fetch('guardians/rogue.json').then(r => r.json())]);
+const [P, KD, GB, GM, GR, GSW, GSM, GSR, GSN] = await Promise.all([fetch('props.json').then(r => r.json()), fetch('knight_demo.json').then(r => r.json()), fetch('guardians/barbarian.json').then(r => r.json()), fetch('guardians/mage.json').then(r => r.json()), fetch('guardians/rogue.json').then(r => r.json()), fetch('guardians/skel_warrior.json').then(r => r.json()), fetch('guardians/skel_mage.json').then(r => r.json()), fetch('guardians/skel_rogue.json').then(r => r.json()), fetch('guardians/skel_minion.json').then(r => r.json())]);
 const box = new THREE.BoxGeometry(1, 1, 1);
 const mat = new THREE.MeshLambertMaterial();
 const col = new THREE.Color(), O = new THREE.Object3D();
@@ -207,12 +207,16 @@ const GTYPES = {
   knight: { name: '기사', d: KD, legacy: true, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
   barbarian: { name: '야만전사', d: GB, parts: { 1: ['털모자', 3], 4: ['방패', 3], 3: ['도끼', 2] } },
   mage: { name: '마법사', d: GM, parts: { 1: ['모자', 3], 4: ['마법서', 3], 3: ['마법봉', 2] } },
-  rogue: { name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } } };
+  rogue: { hs: .95, name: '도적', d: GR, parts: { 4: ['단검', 3], 3: ['석궁', 2] } },
+  skelwar: { hs: .94, name: '해골 전사', d: GSW, parts: { 1: ['투구', 3], 4: ['방패', 3], 3: ['검', 2] } },
+  skelmage: { name: '해골 마법사', d: GSM, parts: { 1: ['모자', 3], 3: ['지팡이', 2] } },
+  skelrogue: { hs: .86, name: '해골 도적', d: GSR, parts: { 1: ['두건', 3], 3: ['석궁', 2] } },
+  skelminion: { hs: .72, name: '해골 병사', d: GSN, parts: { 4: ['방패', 2], 3: ['도끼', 2] } } };
 const SLOTS = [
   { x: -3.0, z: -6.5, H: 2.0, amp: .4, per: 4.8, gopen: 2.4, gblock: 1.2 },
   { x: 0, z: -7.6, H: 2.2, amp: .4, per: 6.0, gopen: 3.0, gblock: 1.4 },
   { x: 3.0, z: -6.5, H: 2.0, amp: .4, per: 4.2, gopen: 2.0, gblock: 1.1 }];
-const GOKEYS = ['knight', 'barbarian', 'mage', 'rogue'];
+const GOKEYS = ['knight', 'barbarian', 'mage', 'rogue', 'skelwar', 'skelmage', 'skelrogue', 'skelminion'];
 const GWARN = .5;
 const ZRANK = (ZONE - 2 + 8) % 8;   // 진행 순서 0..7 (2→3→…→8→1)
 const DIFF = Math.min(9, Math.max(0, VISIT - 1) + Math.floor(ZRANK / 2));
@@ -237,6 +241,7 @@ function downsample(vox) {   // 2x2x2 묶음: 부위(장비)가 있으면 그 �
 }
 function makeGuardian(typeKey, slot, idx) {
   const T_ = GTYPES[typeKey], D = T_.d;
+  slot = Object.assign({}, slot, { H: slot.H * (T_.hs || 1) });   // 종류별 크기 보정(겹침 방지)
   const hgt = D.height || 81, pitch = D.pitch;
   const scale = slot.H / ((hgt + 1) * pitch);
   const kpt = pitch * scale * 2;                        // 2x2x2 묶음이므로 복셀 크기 2배
@@ -270,6 +275,7 @@ function makeGuardian(typeKey, slot, idx) {
   const keys = []; // 방문마다 구성이 바뀜: 기사/야만전사/마법사를 섞어서 3체
   const SIG = { 1: 'barbarian', 2: 'knight', 3: 'mage', 4: 'knight', 5: 'rogue', 6: 'mage', 7: 'rogue', 8: 'barbarian' }[ZONE];   // 구역별 대표 수호자(약 절반 확률)
   for (let i = 0; i < 3; i++) keys.push(R() < .5 ? SIG : GOKEYS[Math.floor(R() * GOKEYS.length)]);
+  if (q.get('g')) q.get('g').split(',').forEach((k, i) => { if (GTYPES[k]) keys[i] = k; });   // 테스트용 강제 지정
   if (new Set(keys).size === 1) keys[1] = GOKEYS[(GOKEYS.indexOf(keys[0]) + 1) % GOKEYS.length];   // 최소 2종류
   const slots = SLOTS.map(s_ => ({ ...s_ }));
   keys.forEach((k, i) => GS.push(makeGuardian(k, slots[i], i)));

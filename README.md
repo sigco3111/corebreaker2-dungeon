@@ -10,7 +10,7 @@
 
 - 가로 화면 고정, 플레이어 완전 고정, 시점은 원근을 줄인 B안
 - 화면을 눌러(터치) 발사. 부술 물체는 카메라 기준 약 4.8~9.2m 구간에만 배치
-- 수호자 3명이 좌우로 움직이며, 푸른 빛이 나는 동안은 막습니다. 종류는 기사, 야만전사, 마법사, 도적 4종(구성은 방문마다 무작위, 최소 2종)
+- 수호자 3명이 좌우로 움직이며, 푸른 빛이 나는 동안은 막습니다. 종류는 기사, 야만전사, 마법사, 도적, 해골 전사, 해골 마법사, 해골 도적, 해골 병사 8종(구성은 방문마다 무작위, 최소 2종)
 - 장비(머리 장식, 방패, 무기 등)를 모두 부수면 코어가 드러나고, 코어를 맞히면 몸 전체가 복셀로 무너짐. 장비를 모두 부수기 전에는 몸통이 깎이지 않음
 - 무기 3종(기본탄, 범위탄, 관통탄)과 Lv1~5 강화 상점, 수집 도감
 - 방문 횟수와 구역 순서에 따라 수호자가 빨라지고 방어 시간이 길어짐
@@ -39,6 +39,7 @@
 | --- | --- | --- |
 | KayKit Dungeon Remastered (소품, 벽, 바닥) | Kay Lousberg, https://kaylousberg.itch.io/kaykit-dungeon-remastered | CC0 |
 | KayKit Character Pack Adventurers (Knight, Barbarian, Mage, Rogue) | Kay Lousberg, https://kaylousberg.itch.io/kaykit-adventurers | CC0 |
+| KayKit Character Pack Skeletons 1.0 (Warrior, Mage, Rogue, Minion와 무기) | Kay Lousberg, https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 (LICENSE.txt에 CC0 명시) | CC0 |
 | three.js | https://threejs.org | MIT |
 
 3D 모델은 복셀로 변환해 `props.json`, `knight_demo.json`, `guardians/*.json` 으로 저장했습니다.
