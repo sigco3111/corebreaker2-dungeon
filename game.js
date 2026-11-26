@@ -647,10 +647,17 @@ function aimInfo(nx, ny) {
     return ['#aaaaaa', '몸통(단단)']; }
   return null;
 }
+let hlG = null, hlC = -1;
+function setHL(g, c) {
+  if (hlG === g && hlC === c) return;
+  const paint = (G, C, k) => { if (!G || C < 0 || !G.K.mesh.instanceColor) return; const K = G.K; for (let i = 0; i < K.n; i++) if (K.cat[i] == C && K.alive[i]) { const v = K.v[i]; col.setRGB(Math.min(1, v[3] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[4] / 255 * k + (k > 1 ? .12 : 0)), Math.min(1, v[5] / 255 * k + (k > 1 ? .12 : 0)), THREE.SRGBColorSpace); K.mesh.setColorAt(i, col); } K.mesh.instanceColor.needsUpdate = true; };
+  paint(hlG, hlC, 1); hlG = g; hlC = c; paint(g, c, 1.55);
+}
 function showAim() {
   if (!lastAim) return;
   if (!crossTag) { crossTag = document.createElement('div'); crossTag.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:.4vmin;white-space:nowrap;font-size:2vmin;font-weight:800;text-shadow:0 1px 3px #000'; cross.appendChild(crossTag); }
   const a = aimInfo(lastAim[0], lastAim[1]);
+  { const hh = pickHit(lastAim[0], lastAim[1]).best; let hg = null, hc = -1; if (hh && hh.kind === 'knight' && a && a[0] !== '#aaaaaa' && a[0] !== '#6ab0ff') { const c = hh.g.K.cat[hh.i]; if (hh.g.PARTS[c] && hh.g.PARTS[c].alive) { hg = hh.g; hc = c; } } setHL(hg, hc); }
   cross.style.borderColor = a ? a[0] : '#fff'; crossTag.style.color = a ? a[0] : '#fff'; if (crossTag.textContent !== (a ? a[1] : '')) crossTag.textContent = a ? a[1] : '';
 }
 function moveCross(e) {
