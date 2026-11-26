@@ -1,0 +1,7 @@
+<!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const H=location.hash.slice(1);if(H!=='none')localStorage.setItem('cb2.save.v1',JSON.stringify({coins:900,sup:{rl:1,mag:1,coin:1},unlocked:[1,2],wu:[1,1,1,1,1]}));
+const f=document.getElementById('f');f.src='../index.html?visit=1&zone=1&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument;const C=f.contentWindow.__cb2;const o={};
+o.ammoMag=C.ammo.join('/');o.saveSupBeforeGo=JSON.stringify(C.save.sup);d.getElementById('go').click();o.saveSupAfterGo=JSON.stringify(C.save.sup);o.stored=localStorage.getItem('cb2.save.v1').match(/"sup":\{[^}]*\}/)[0];
+const c0=C.coins;C.addCoins&&C.addCoins(100,0,0,0);o.coinGain=C.coins-c0;
+document.title='done:'+JSON.stringify(o);}catch(e){document.title='err:'+e.message+(e.stack||'').split('\n')[1];}},9000);</script>

@@ -6,8 +6,8 @@ const TEST = STAGE !== 0;
 let summoned = false;
 const SUMMON = q.get('mode') === 'summon' || (!TEST && q.get('mode') !== 'classic'); summoned = !SUMMON;   // 새 루프: 정지 소품 파괴 -> 소환 게이지 -> 수호자 무리
 const SAVE_KEY = 'cb2.save.v1';
-const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, bt2: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
-function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!o.bt2) o.bt2 = {}; if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
+const SAVE_DEF = () => ({ plays: 0, clears: 0, coins: 0, props: 0, visits: {}, bestTime: {}, bt2: {}, sup: {}, wl: [1, 1, 1, 1, 1], wu: [1, 1, 1, 0, 0], dex: {}, shots: 0, hits: 0, hist: [], zone: 2, unlocked: [2] });
+function loadSave() { try { const o = Object.assign(SAVE_DEF(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); if (!o.bt2) o.bt2 = {}; if (!o.sup) o.sup = {}; if (!Array.isArray(o.wl)) o.wl = [1, 1, 1]; while (o.wl.length < 5) o.wl.push(1); if (!Array.isArray(o.wu)) o.wu = [1, 1, 1, 0, 0]; while (o.wu.length < 5) o.wu.push(0); if (!o.dex || typeof o.dex !== 'object') o.dex = {}; if (!Array.isArray(o.hist)) o.hist = []; return o; } catch (e) { return SAVE_DEF(); } }
 function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { } }
 const save = loadSave();
 if (!Array.isArray(save.unlocked) || !save.unlocked.length) save.unlocked = [2];
@@ -152,7 +152,7 @@ function marchVoxels(e, r) {  // returns {t,p,i} or null
 
 let totalCoins = 0, propsBroken = 0, shots = 0, hitsLanded = 0;
 function addCoins(n, wx, wy, wz) {
-  n = Math.round(n * (ZR.coin || 1));
+  n = Math.round(n * (ZR.coin || 1) * (SUPA.coin ? 1.2 : 1));
   totalCoins += n; $('tr').textContent = '코인 ' + totalCoins;
   const v = new THREE.Vector3(wx, wy, wz).project(cam);
   const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+' + n;
@@ -552,7 +552,14 @@ function pickHit(nx, ny, t0 = 0) {
   return { best, far: ray.at(30, new THREE.Vector3()) };
 }
 const MAG = [{ n: 12, rl: 1.4 }, { n: 6, rl: 1.8 }, { n: 3, rl: 0 }, { n: 4, rl: 2.2 }, { n: 6, rl: 1.8 }];
-const magN = w => { const L = (save.wl[w] || 1); const b = MAG[w].n; return w === 0 ? b + (L >= 7 ? 2 : 0) + (L >= 10 ? 2 : 0) : w === 1 ? b + (L >= 7 ? 1 : 0) + (L >= 10 ? 2 : 0) : w === 2 ? b + (L >= 4 ? 1 : 0) + (L >= 8 ? 1 : 0) : w === 3 ? b + (L >= 10 ? 1 : 0) : b + (L >= 10 ? 2 : 0); };
+// 특수 탄창(1회용, 한 판만 적용). 영구 해금과 달리 쓰면 사라진다. 시작 버튼을 눌러야 소모된다.
+const SUPPLIES = [
+  { id: 'rl', n: '급속 장전 탄창', d: '이번 판 장전 시간 40% 단축', p: 120 },
+  { id: 'mag', n: '확장 탄창', d: '이번 판 탄창 +25% (관통탄 제외)', p: 150 },
+  { id: 'coin', n: '코인 보급', d: '이번 판 코인 +20% (한 판 수입 약 830이면 +166, 가격 200보다 적음: 수입이 1,000 넘을 때만 이득)', p: 200 }];
+const SUPA = Object.assign({}, save.sup);
+const magBase = w => { const L = (save.wl[w] || 1); const b = MAG[w].n; return w === 0 ? b + (L >= 7 ? 2 : 0) + (L >= 10 ? 2 : 0) : w === 1 ? b + (L >= 7 ? 1 : 0) + (L >= 10 ? 2 : 0) : w === 2 ? b + (L >= 4 ? 1 : 0) + (L >= 8 ? 1 : 0) : w === 3 ? b + (L >= 10 ? 1 : 0) : b + (L >= 10 ? 2 : 0); };
+const magN = w => { const m = magBase(w); return SUPA.mag && w !== 2 ? m + Math.max(1, Math.round(m * .25)) : m; };
 const ammo = [0, 1, 2, 3, 4].map(w => magN(w)); let reloadT = 0, gauge = 0; const GAUGE_MAX = 100;
 function gaugeUp(h) {
   if (TEST || (h.kind !== 'knight' && h.kind !== 'core')) return;
@@ -638,13 +645,13 @@ window.addEventListener('keydown', e => {
   if (k >= '1' && k <= '5') { const w = +k - 1; if (save.wu[w]) selectWeapon(w); else { $('tc').innerHTML = WEAPONS[w].n + ' 잠김<br>결과 화면 상점에서 해금'; flashT = .9; } }
   else if (k === 'r') {
     if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
-    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
+    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
 });
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd" style="opacity:.7">${PERKS[i]}</div>` + (L >= LVMAX ? '<div class="cm">최대</div>' : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (1회용, 다음 판에만 적용·소모)</b>` + SUPPLIES.map(x => `<button class="sp" data-s="${x.id}" ${save.sup[x.id] ? 'disabled' : (save.coins >= x.p ? '' : 'disabled')} title="${x.d}">${x.n} ${save.sup[x.id] ? '(준비됨)' : x.p}<small>${x.d}</small></button>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button><div class="recwrap"></div>`;
 }
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTime[ZONE];
@@ -652,13 +659,13 @@ function recHTML() {
   return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function bindRec(box) { const b = box.querySelector('.recbtn'); if (!b) return; b.onclick = () => { const r = box.querySelector('.recwrap'); const on = !r.innerHTML; r.innerHTML = on ? recHTML() : ''; b.textContent = on ? '상점으로' : '기록 보기'; const bx = document.querySelector('#ov .box'); bx && bx.classList.toggle('showrec', on); }; }
-function bindShop(box) { bindRec(box); box.querySelectorAll('.unl').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (!save.wu[w] && save.coins >= WEAPONS[w].unlock) { save.coins -= WEAPONS[w].unlock; save.wu[w] = 1; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
+function bindShop(box) { bindRec(box); box.querySelectorAll('.sp').forEach(b => { b.onclick = () => { const x = SUPPLIES.find(q => q.id === b.dataset.s); if (!save.sup[x.id] && save.coins >= x.p) { save.coins -= x.p; save.sup[x.id] = 1; writeSave(save); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.unl').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (!save.wu[w] && save.coins >= WEAPONS[w].unlock) { save.coins -= WEAPONS[w].unlock; save.wu[w] = 1; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); box.querySelectorAll('.up').forEach(b => { b.onclick = () => { const w = +b.dataset.w; if (save.coins >= upCost(w) && wLvl(w) < LVMAX) { save.coins -= upCost(w); save.wl[w]++; writeSave(save); renderBar(); box.innerHTML = shopHTML(); bindShop(box); } }; }); bindRec(box.parentElement || box); }
 function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
     if (reloadT > 0 && reloadW === cw) return;
     if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 탄약 없음<br>적을 명중해 게이지 충전'; flashT = .7; return; }
-    ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1); reloadW = cw; }
+    ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
@@ -761,7 +768,7 @@ function updTimer() {
 }
 
 function showResult() {
-  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ z: ZONE, v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
+  save.plays++; save.clears++; save.coins += totalCoins; save.props += propsBroken; save.visits[ZONE] = VISIT; { const nz = nextZone(ZONE); if (!save.unlocked.includes(ZONE)) save.unlocked.push(ZONE); if (!save.unlocked.includes(nz)) save.unlocked.push(nz); } save.shots += shots; save.hits += hitsLanded; save.hist.push({ u: Object.keys(SUPA).join('+'), z: ZONE, v: VISIT, t: Math.round(elapsed), c: totalCoins, a: shots ? Math.round(hitsLanded / shots * 100) : 0 }); if (save.hist.length > 8) save.hist.shift();
   if (!SUMMON) { const bt = save.bestTime[ZONE]; if (!bt || elapsed < bt) save.bestTime[ZONE] = Math.round(elapsed); }
   if (!TEST) writeSave(save);
   const acc = shots ? Math.round(hitsLanded / shots * 100) : 0;
@@ -810,7 +817,7 @@ if (!TEST) {
   ov.firstElementChild.innerHTML = `<h1>코어브레이커2 : 와장창 던전</h1><p>구역 ${ZONE} ${T.n} · ${VISIT}번째 방문</p><p style="color:#ffd54a">구역 규칙: ${ZR.t}${({ 2: ' · 중장갑 구역', 3: ' · 해골 구역', 6: ' · 해골 구역', 5: ' · 민첩 구역', 7: ' · 민첩 구역', 8: ' · 가운데 ★정예(처치 보상 3배)' })[ZONE] || ''}</p><p class="rules">화면을 눌러 발사합니다.<br>수호자 3명이 움직입니다. 장비(머리 장식, 방패, 무기)를 모두 부수면 코어가 드러납니다.<br>푸른 빛이 나는 동안은 막히니, 빛이 꺼질 때를 노리세요.<br>코어를 맞히면 몸 전체가 무너집니다.</p><div class="zones">${THEMES.map((t, i) => `<button class="zb${i + 1 === ZONE ? ' cur' : ''}" data-z="${i + 1}" ${save.unlocked.includes(i + 1) ? '' : 'disabled'}>${save.unlocked.includes(i + 1) ? t.n : '잠김'}</button>`).join('')}</div><div class="shop"></div><button id="go">시작</button>`;
   ov.querySelectorAll('.zb').forEach(b => { b.onclick = () => { save.zone = +b.dataset.z; writeSave(save); const u = new URL(location.href); u.searchParams.delete('visit'); u.searchParams.delete('zone'); location.href = u.toString(); }; });
   { const sh_ = ov.querySelector('.shop'); sh_.innerHTML = shopHTML(); bindShop(sh_); }
-  $('go').onclick = () => { ov.style.display = 'none'; started = true; for (const g of GS) for (const c in g.marks) relocateMark(g, c); };
+  $('go').onclick = () => { ov.style.display = 'none'; started = true; if (Object.keys(save.sup).length && !TEST) { save.sup = {}; writeSave(save); } for (const g of GS) for (const c in g.marks) relocateMark(g, c); };
 }
 
 // ---------- 루프 ----------
