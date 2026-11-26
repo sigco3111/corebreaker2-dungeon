@@ -474,7 +474,7 @@ function applyHit(h) {
     $('tc').innerHTML = '수호자 방어!<br>막혔다'; flashT = .6; deflects++; sfx('block'); return 'stop';
   }
   if (h.kind === 'prop') { burst(h.p.x, h.p.y, h.p.z, 255, 240, 200, 5, 3, .04); damageProp(h.e, h.p, .55 * (h.mult || 1)); }
-  else if (h.kind === 'knight') hitKnight(h);
+  else if (h.kind === 'knight') { if (!TEST) { const q = h.wp || h.p; burst(q.x, q.y, q.z, 255, 235, 150, 6, 3.5, .04); } hitKnight(h); }
   else if (h.kind === 'core') { if (h.g.kstate === 'exposed') collapse(h.g); }
   else if (h.kind === 'wall') burst(h.p.x, h.p.y, h.p.z, 255, 220, 120, 4, 2, .03);
 }
