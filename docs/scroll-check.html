@@ -1,0 +1,17 @@
+<!doctype html><body><script>
+const all={rl:3,mag:3,pierce:3,bolt:3,blast:3,sg:3};
+localStorage.setItem('cb2.save.v1', JSON.stringify({coins:99999,wu:[1,1,1,1,1],wl:[10,10,10,10,10],sup:all,eq:{},md:[1,1,1,1,1],mu:{'0:1':1,'1:1':1,'2:1':1,'3:1':1,'4:1':1},ms:[12,12,12,12,12],hist:[]}));
+const q=new URLSearchParams(location.search);const f=document.createElement('iframe');f.width=q.get('w');f.height=q.get('h');f.style.border=0;document.body.style.margin=0;f.src='../index.html?visit=2&zone=2&mode=summon';document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{try{const d=f.contentDocument,C=f.contentWindow.__cb2;d.getElementById('go').click();C.showResult();
+ if(location.hash==='#pk')d.querySelector('.pkbtn').click();
+ const bx=d.querySelector('#ov .box');bx.scrollTop=bx.scrollHeight;
+ const last=location.hash==='#pk'?bx.querySelector('.pkview .pkrow:last-of-type'):bx.querySelector('.shop .dex');
+ const btns=[...bx.querySelectorAll('#nextz,#again')];
+ const lr=last.getBoundingClientRect();
+ const res={lastBottom:Math.round(lr.bottom),lastVisible:true,btns:btns.map(b=>{const r=b.getBoundingClientRect();return{t:Math.round(r.top),b:Math.round(r.bottom)}})};
+ res.covered=btns.some(b=>{const r=b.getBoundingClientRect();return lr.top<r.bottom&&lr.bottom>r.top});
+ // 실제 탭 가능 여부: 마지막 항목 중심의 최상위 요소
+ const el=d.elementFromPoint((lr.left+lr.right)/2,(lr.top+lr.bottom)/2);
+ res.topAtLastCenter=el?(el.tagName+'.'+el.className).slice(0,40):'null';
+ document.title='RES'+JSON.stringify(res);}catch(e){document.title='ERR'+e.message}},3000);
+</script>

@@ -1,0 +1,7 @@
+<!doctype html><body><script>
+localStorage.setItem('cb2.save.v1', JSON.stringify({coins:0}));
+const q=new URLSearchParams(location.search);const f=document.createElement('iframe');f.width=q.get('w')||844;f.height=q.get('h')||390;f.style.border=0;document.body.style.margin=0;f.src='../index.html';document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{try{const d=f.contentDocument;
+ const els=[...d.querySelectorAll('#ov .box > *')].slice(0,6).map(e=>{const r=e.getBoundingClientRect();return {tag:e.tagName+'.'+e.className,t:Math.round(r.top),b:Math.round(r.bottom),txt:(e.textContent||'').slice(0,18)}});
+ document.title='RES'+JSON.stringify(els);}catch(e){document.title='ERR'+e.message}},2500);
+</script>
