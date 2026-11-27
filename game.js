@@ -709,8 +709,8 @@ function legacyHTML() { const L = []; for (const k in save.bt2) { const m = /^([
 const LEDN = [['up', '강화'], ['unl', '해금'], ['mod', '개조'], ['ms', '각인'], ['sup', '보급']];
 function recHTML() {
   const acc = save.shots ? Math.round(save.hits / save.shots * 100) : 0; const bt = save.bestTimeN[ZONE];
-  const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.z ? THEMES[h.z - 1].n + ' ' : ''}${h.v}번째</td><td>${h.t}초${h.s === undefined ? ' (구 기록·조건 불명)' : h.s ? ' (보급)' : ' (무보급)'}</td><td>${h.a}%</td><td>${h.c}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
-  return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>무보급 최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${save.coins}</b>보유 코인</div></div><div class="led" style="font-size:12px;opacity:.85;margin:4px 0">누적 수입 ${save.led.inc || 0} · 지출 ${LEDN.map(([k, n]) => n + ' ' + (save.led[k] || 0)).join(' · ')}</div>${legacyHTML()}<table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
+  const rows = save.hist.slice().reverse().map(h => `<tr><td>${h.z ? THEMES[h.z - 1].n + ' ' : ''}${h.v}번째</td><td>${h.t}초${h.s === undefined ? ' (구 기록·조건 불명)' : h.s ? ' (보급)' : ' (무보급)'}</td><td>${h.a}%</td><td>${fmtN(h.c)}</td></tr>`).join('') || '<tr><td colspan=4>아직 기록 없음</td></tr>';
+  return `<div class="rec"><div class="rg"><div><b>${save.plays}</b>플레이</div><div><b>${save.clears}</b>클리어</div><div><b>${bt ? bt + '초' : '-'}</b>무보급 최단(구역${ZONE})</div><div><b>${acc}%</b>누적 명중률</div><div><b>${save.props}</b>부순 소품</div><div><b>${fmtN(save.coins)}</b>보유 코인</div></div><div class="led" style="font-size:12px;opacity:.85;margin:4px 0">누적 수입 ${fmtN(save.led.inc || 0)} · 지출 ${LEDN.map(([k, n]) => n + ' ' + (save.led[k] || 0)).join(' · ')}</div>${legacyHTML()}<table><tr><th>방문</th><th>시간</th><th>명중</th><th>코인</th></tr>${rows}</table></div>`;
 }
 function pkHTML() {   // 강화 효과 상세: 별도 화면으로 읽을 크기 확보(짧은 화면에서 글자를 줄여 넣지 않음)
   const rows = WEAPONS.map((W, i) => {
