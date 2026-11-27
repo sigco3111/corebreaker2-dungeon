@@ -184,7 +184,7 @@ function damageProp(e, p, radius) {
     if (dx * dx + dy * dy + dz * dz < r2) { removeVoxel(e, i, (k++ % 2) === 0, null); }
   }
   e.mesh.instanceMatrix.needsUpdate = true;
-  if (SUMMON && !summoned && k > 0 && typeof sgVal === 'number') { sgVox += k; sgVal = sgBase + sgVox / sgScale(); updSG(); if (sgVal >= SG_NEED) summonGuardians(); }   // 소환 게이지는 깎은 복셀 양에 비례(구역 소품 구성과 상관없이 비슷한 시간)
+  if (SUMMON && !summoned && k > 0 && typeof sgVal === 'number') { sgVox += k / sgW(cw); sgVal = sgBase + sgVox / SG_VOX; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }   // 소환 게이지는 깎은 복셀 양에 비례(구역 소품 구성과 상관없이 비슷한 시간)
   if (!e.dead && e.count < e.total * .4) breakProp(e);
 }
 // ---------- 효과음 (WebAudio 합성, 외부 에셋 없음) ----------
@@ -510,7 +510,7 @@ function clearOccluders(fx) {
 if (!SUMMON) clearOccluders(false);
 let TOTAL_PROPS = props.length; let autoCleared = 0;
 // ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
-const SG_NEED = 12; const SG_VOX = +(q.get('sgvox') || 500); const SG_LV = +(q.get('sglv') || .15); const sgScale = () => { let m = 1; for (let i = 0; i < 5; i++) if (save.wu[i]) m = Math.max(m, effLv(i)); return SG_VOX * (1 + SG_LV * (m - 1)); };   // 가장 강한 탄의 강화에 따라 소환에 필요한 복셀량이 완만히 증가(Lv10 약 x2)
+const SG_NEED = 12; const SG_VOX = +(q.get('sgvox') || 500); const SG_LV = +(q.get('sglv') || .15); const sgW = w => 1 + SG_LV * (effLv(w) - 1);   // 쏜 탄의 강화 단계만큼 그 탄이 게이지에 주는 몫이 줄어듦(Lv10 탄 약 1/2). 다른 약한 탄에는 영향 없음
 let sgVox = 0; const sgBase = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0; let sgVal = sgBase;
 const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:15vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
 sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
