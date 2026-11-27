@@ -79,7 +79,7 @@ python3 -m http.server
 | KayKit Character Pack Skeletons 1.0 (Warrior, Mage, Rogue, Minion와 무기) | Kay Lousberg, https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 (LICENSE.txt에 CC0 명시) | CC0 |
 | three.js | https://threejs.org | MIT |
 
-3D 모델은 복셀로 변환해 `props.json`, `knight_demo.json`, `guardians/*.json`으로 저장했습니다. 게임 코드는 MIT 라이선스입니다(LICENSE 파일 참조).
+3D 모델은 복셀로 변환해 `props.json`, `knight_demo.json`, `guardians/*.json`으로 저장했습니다.
 
 ## 크레딧
 
