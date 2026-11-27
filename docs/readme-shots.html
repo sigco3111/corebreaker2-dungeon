@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>run</title><iframe id=f style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe><script>
+// #props | #fight | #clear : 해당 장면에서 시간을 멈춰 스크린샷용 정지 프레임을 만든다.
+const PH=location.hash.slice(1)||'props';
+localStorage.setItem('cb2.save.v1',JSON.stringify({wl:[10,8,6,4,2],wu:[1,1,1,1,1],ms:[35,20,10,5,0],coins:1234567,plays:9,sup:{rl:2},mu:{'0:1':1},md:[1,0,0,0,0],visits:{1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1}}));
+const f=document.getElementById('f');f.src='../index.html?zone=2&mode=summon';
+setTimeout(()=>{try{const d=f.contentDocument,W=f.contentWindow;d.getElementById('go').click();const C=W.__cb2,T=C.THREE;
+const proj=p=>p.clone().project(C.cam);
+function aimProp(){const P=C.props,off=Math.floor(Math.random()*P.length);for(let pi=0;pi<P.length;pi++){const e=P[(pi+off)%P.length];if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return[v.x,v.y];}}return null;}
+const ring=(g,c)=>{const m=g.marks[c];return C.projectPoint(m.x+g.off,m.y+.04+(g.bob||0),m.z+.25);};
+let froze=false;
+for(let step=0;step<30*400&&!froze;step++){C.update(1/30);
+ if(!C.sg[2]){if(step%5===0){const a=aimProp();if(a)C.fire(a[0],a[1]);}
+  if(PH==='props'&&C.broken>=8)froze=true;}
+ else{if(PH==='props')froze=true;
+  const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');
+  if(g&&g.gmode!=='block'){let a=null;
+   if(g.kstate==='exposed'){const p=g.CORE;a=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c)a=ring(g,c);}
+   if(a)C.fire(a[0],a[1]);}
+  if(PH==='fight'&&g)froze=true;
+  if(PH==='clear'&&C.killed&&d.getElementById('ov').style.display==='flex')froze=true;}
+}
+document.title='done:'+PH+' broken='+C.broken+' killed='+C.killed;}catch(e){document.title='err:'+e.message;}},5000);
+</script>
