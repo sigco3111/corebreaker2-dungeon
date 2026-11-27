@@ -10,7 +10,7 @@ for(let step=0;step<30*400;step++){C.update(1/30);t+=1/30;
  if(C.GS.every(g=>g.kstate==='done'||g.kstate==='collapse')&&C.GS.every(g=>g.kstate==='done')){st.tClear=+t.toFixed(1);break;}
  const n0=C.flying.length;
  if(!C.sg[2]){const a=(step%5===0)?aimProp():null;if(a){C.fire(a[0],a[1]);if(C.flying.length>n0)st.shotsProps++;}}
- else{if(st.tSummon===null){C.selectWeapon(0);st.offBrokenAtSummon=off0.filter(e=>e.dead).length;st.tSummon=+t.toFixed(1);st.removedAtSummon=st.propsInit-C.props.filter(e=>!e.dead).length;}
+ else{if(st.tSummon===null){C.selectWeapon(+(H[7]||0));st.offBrokenAtSummon=off0.filter(e=>e.dead).length;st.tSummon=+t.toFixed(1);st.removedAtSummon=st.propsInit-C.props.filter(e=>!e.dead).length;}
   const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');if(!g||g.gmode==='block')continue;let a=null;
   if(g.kstate==='exposed'){const p=g.CORE;a=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c)a=ring(g,c);}
   if(a){C.fire(a[0],a[1]);if(C.flying.length>n0){st.shotsFight++;const h=C.flying[C.flying.length-1].hits[0];if(h&&(h.kind==='core'||h.kind==='knight'))st.onPartF++;else st.missF++;}}}
