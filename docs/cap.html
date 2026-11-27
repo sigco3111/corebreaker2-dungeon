@@ -12,6 +12,7 @@ setTimeout(() => {
   try {
     if (P.act === 'clear') f.contentWindow.__cb2.showResult();
     if (P.act === 'play') { const d = f.contentDocument, C = f.contentWindow.__cb2; d.getElementById('go').click(); for (let i = 0; i < 90; i++) C.update(1 / 30); C.addCoins(123, 0, 0, -6); for (let i = 0; i < 30; i++) C.update(1 / 30); }
+    if (P.act === 'pk' || P.act === 'rec') { const d = f.contentDocument; const b = d.querySelector(P.act === 'pk' ? '.pkbtn' : '.recbtn'); b && b.click(); }
     document.title = 'ready';
   } catch (e) { document.title = 'err:' + e.message; }
 }, 5000);

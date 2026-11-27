@@ -2,7 +2,8 @@
 // 잔존소품 조준불가 실증: 구역별로 '조준 가능한 소품을 전부 부쉈다'고 가정하는 고정점 반복 후
 // 남는(=기하학적으로 어떤 복셀도 카메라에서 맞힐 수 없는) 소품이 있는지 검사.
 const f = document.getElementById('f');
-const load = z => new Promise(res => { f.onload = () => setTimeout(res, 1200); f.src = '../index.html?zone=' + z + '&mode=summon&visit=1'; });
+const V = +(location.hash.slice(1) || 1);
+const load = z => new Promise(res => { f.onload = () => setTimeout(res, 1200); f.src = '../index.html?zone=' + z + '&mode=summon&visit=' + V; });
 setTimeout(async () => {
   const out = {};
   try {
@@ -31,7 +32,7 @@ setTimeout(async () => {
         if (!progress || rounds > 40) break;
       }
       const left = props.filter(e => !e.dead);
-      out['z' + z] = { init: props.length, unbreakable: left.length, names: left.map(e => e.name).slice(0, 5), rounds };
+      out['z' + z + 'v' + V] = { init: props.length, unbreakable: left.length, names: left.map(e => e.name).slice(0, 5), rounds };
     }
     document.title = 'done:' + JSON.stringify(out);
   } catch (e) { document.title = 'err:' + e.message + ' ' + (e.stack || '').split('\n')[1]; }
