@@ -1,0 +1,39 @@
+<!doctype html><meta charset="utf-8"><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+// 잔존소품 조준불가 실증: 구역별로 '조준 가능한 소품을 전부 부쉈다'고 가정하는 고정점 반복 후
+// 남는(=기하학적으로 어떤 복셀도 카메라에서 맞힐 수 없는) 소품이 있는지 검사.
+const f = document.getElementById('f');
+const load = z => new Promise(res => { f.onload = () => setTimeout(res, 1200); f.src = '../index.html?zone=' + z + '&mode=summon&visit=1'; });
+setTimeout(async () => {
+  const out = {};
+  try {
+    for (let z = 1; z <= 8; z++) {
+      localStorage.removeItem('cb2.save.v1');
+      await load(z);
+      const C = f.contentWindow.__cb2, T = C.THREE;
+      const props = C.props;
+      let rounds = 0;
+      for (;;) {
+        let progress = 0;
+        for (const e of props) {
+          if (e.dead) continue;
+          const step = Math.max(1, Math.floor(e.n / 200));
+          let aimable = false;
+          for (let i = 0; i < e.n && !aimable; i += step) {
+            if (!e.alive[i]) continue;
+            const v = new T.Vector3(e.pos[i * 3], e.pos[i * 3 + 1], e.pos[i * 3 + 2]).project(C.cam);
+            if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) continue;
+            const b = C.pickHit(v.x, v.y).best;
+            if (b && b.kind === 'prop' && b.e === e) aimable = true;
+          }
+          if (aimable) { e.dead = true; for (let i = 0; i < e.n; i++) e.alive[i] = 0; progress++; }
+        }
+        rounds++;
+        if (!progress || rounds > 40) break;
+      }
+      const left = props.filter(e => !e.dead);
+      out['z' + z] = { init: props.length, unbreakable: left.length, names: left.map(e => e.name).slice(0, 5), rounds };
+    }
+    document.title = 'done:' + JSON.stringify(out);
+  } catch (e) { document.title = 'err:' + e.message + ' ' + (e.stack || '').split('\n')[1]; }
+}, 4000);
+</script>
