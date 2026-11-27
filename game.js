@@ -163,9 +163,11 @@ function marchVoxels(e, r) {  // returns {t,p,i} or null
 
 let totalCoins = 0, propsBroken = 0, shots = 0, hitsLanded = 0;
 const COIN_SCALE = .6;   // 수입 하향(사용자 07:48 요청): 소모처가 금방 끝나지 않도록
+function updTr() { $('tr').textContent = '이번 수입 ' + totalCoins + ' · 보유 ' + (save.coins + totalCoins); }   // 보유 = 저장된 누적 코인 + 이번 판 수입(클리어 시 저장에 합산됨)
+updTr();   // 시작 시 보유 코인 바로 표시
 function addCoins(n, wx, wy, wz) {
   n = Math.round(n * (ZR.coin || 1) * COIN_SCALE);
-  totalCoins += n; $('tr').textContent = '이번 수입 ' + totalCoins;
+  totalCoins += n; updTr();   // 총 수입(보유)도 함께 표시(사용자 11:39 요청)
   const v = new THREE.Vector3(wx, wy, wz).project(cam);
   const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+' + n;
   el.style.left = ((v.x + 1) / 2 * 100) + '%'; el.style.top = ((1 - v.y) / 2 * 100) + '%';
