@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+const f=document.getElementById('f');const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const load=(src,seed)=>{if(seed)localStorage.setItem('cb2.save.v1',JSON.stringify(seed));else localStorage.removeItem('cb2.save.v1');return new Promise(res=>{f.onload=()=>setTimeout(res,4500);f.src=src;});};
+setTimeout(async()=>{const out={};try{
+const V=(n)=>{const v={};for(let i=1;i<=8;i++)v[i]=n;return v;};
+for(const [tag,z,vis] of [['z3c1',3,null],['z3c2',3,V(1)],['z3c5',3,V(4)],['z1c1',1,null],['z5c1',5,null],['z8c1',8,null]]){
+  await load('../index.html?zone='+z+'&mode=summon',vis&&{visits:vis});
+  const C=f.contentWindow.__cb2;
+  for(const e of C.props) if(!e.dead) C.breakProp(e);
+  await sleep(300);
+  out[tag]={cycle:C.cycle,diff:C.diff,propCoins:C.totalCoinsNow};
+}
+// 각인 live prices from rendered buttons
+await load('../index.html',{wl:[10,10,10,10,10],wu:[1,1,1,1,1],ms:[0,50,98,0,0],coins:999999999,visits:V(1)});
+const d=f.contentDocument;
+out.msPrices=[...d.querySelectorAll('.card .ms')].map(b=>b.textContent.trim());
+// upCost totals via eco
+const C=f.contentWindow.__cb2;const ups=[];
+for(let w=0;w<5;w++){let s=0;for(let L=1;L<10;L++){const wl=[1,1,1,1,1];wl[w]=L;C.eco.save.wl=wl;s+=C.eco.upCost(w);}ups.push(s);}
+C.eco.save.wl=[10,10,10,10,10];
+out.upTotalPerWeapon=ups;
+document.title='done:'+JSON.stringify(out);}catch(e){document.title='err:'+e.message;}},100);
+</script>
