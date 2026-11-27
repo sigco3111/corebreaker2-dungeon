@@ -647,9 +647,10 @@ const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
 const MSDESC = ['직접 피해 +3%', '파편 피해 +3%', '관통 피해 +3%', '폭발 반경·장비 피해 +3%', '번개 피해 +3%'];
-const msCost = w => { const r = save.ms[w] || 0; return Math.round(300 * Math.pow(1.28, r) / 10) * 10; }, msMul = w => 1 + .03 * (save.ms[w] || 0), MSMAX = 30;
+const msCost = w => { const r = save.ms[w] || 0; return Math.round(300 * Math.pow(1.2, r) / 10) * 10; }, msMul = w => 1 + .03 * (save.ms[w] || 0), MSMAX = 30;
+const msStep = w => Math.floor((save.ms[w] || 0) / 10), msCdM = w => 1 - .05 * msStep(w), msRl = w => 1 - .05 * msStep(w);   // 각인 10/20/30단: 발사 간격과 장전 시간 각 -5%씩(최대 -15%)
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
-const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1)) * (modOf(w).cd || 1);
+const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1)) * (modOf(w).cd || 1) * msCdM(w);
 const wRad = w => WEAPONS[w].rad * (1 + .1 * (effLv(w) - 1)) * (modOf(w).rad || 1);
 const wPierce = w => w === 2 ? 2 + Math.floor(effLv(w) - 1) + (modOf(2).pe || 0) : (w === 0 && wLvl(w) >= 4 ? 1 : 0);
 const upCost = w => { const L = wLvl(w); return L < 5 ? 30 * L : Math.round(25 * Math.pow(L, 1.5) / 5) * 5; };
@@ -685,13 +686,13 @@ window.addEventListener('keydown', e => {
   if (k >= '1' && k <= '5') { const w = +k - 1; if (save.wu[w]) selectWeapon(w); else { $('tc').innerHTML = WEAPONS[w].n + ' 잠김<br>결과 화면 상점에서 해금'; flashT = .9; } }
   else if (k === 'r') {
     if (cw === 2) { $('tc').innerHTML = '관통탄은 장전 불가<br>적 명중 게이지를 채우세요'; flashT = .8; return; }
-    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (modOf(cw).rl || 1) * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
+    if (reloadT <= 0 && ammo[cw] < magN(cw)) { reloadT = MAG[cw].rl * (modOf(cw).rl || 1) * msRl(cw) * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
 });
 const NAMES = { chest: '상자', chest_gold: '황금 상자', coin_stack_large: '큰 동전더미', coin_stack_medium: '동전더미', key: '열쇠', box_small: '작은 상자', barrel_large: '큰 통', barrel_small: '작은 통', barrel_small_stack: '쌓인 통', keg: '술통', bottle_A_green: '초록 병', bottle_B_brown: '갈색 병', plate_food_A: '접시', stool: '의자', candle_triple: '촛대', table_long: '긴 탁자', table_medium: '탁자', chair: '의자', pillar: '기둥', column: '돌기둥', rubble_large: '큰 잔해', rubble_half: '잔해' };
 function dexHTML() { const e = Object.entries(save.dex).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, v]) => `${NAMES[k] || k} ×${v}`).join(' · ') : '아직 없음'; }
 function shopHTML() {
-  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd pk" style="opacity:.7">${PERKS[i]}</div>` + modHTML(i) + (L >= LVMAX ? `<button class="ms" data-w="${i}" ${save.coins >= msCost(i) && (save.ms[i] || 0) < MSMAX ? '' : 'disabled'}>각인 ${save.ms[i] || 0}단 · ${msCost(i)}<span class="msd"> (${MSDESC[i]})</span></button>` : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (보유 최대 3개, '다음 판 사용'을 켠 것만 한 개씩 소모, 켜면 기록은 '보급' 기록으로 따로 비교)</b>` + SUPPLIES.map(x => `<span class="sg"><button class="sp" data-s="${x.id}" ${(save.sup[x.id] || 0) >= SUP_MAX || save.coins < x.p ? 'disabled' : ''}>${x.n} · ${x.e} · ${x.p}${save.sup[x.id] ? ' (보유 ' + save.sup[x.id] + ')' : ''}</button>${save.sup[x.id] ? `<button class="se${save.eq[x.id] ? ' on' : ''}" data-s="${x.id}">${save.eq[x.id] ? '다음 판 사용 ✔' : '다음 판 사용'}</button>` : ''}</span>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button> <button class="pkbtn recbtn2">강화 효과</button><div class="recwrap"></div>`;
+  return `<div class="coinline">보유 코인 <b>${save.coins}</b></div><div class="cards">` + WEAPONS.map((W, i) => { const L = wLvl(i); if (!save.wu[i]) return `<div class="card"><div class="cn">${W.n} <span>잠김</span></div><div class="cd">${W.d}</div><button class="unl" data-w="${i}" ${save.coins >= W.unlock ? '' : 'disabled'}>해금 ${W.unlock} (한 번만)</button></div>`; return `<div class="card"><div class="cn">${W.n} <span>Lv${L}/${LVMAX}</span></div><div class="cd">${W.d}</div><div class="cd pk" style="opacity:.7">${PERKS[i]}</div>` + modHTML(i) + (L >= LVMAX ? `<button class="ms" data-w="${i}" ${save.coins >= msCost(i) && (save.ms[i] || 0) < MSMAX ? '' : 'disabled'}>각인 ${save.ms[i] || 0}단 · ${msCost(i)}<span class="msd"> (${MSDESC[i]}${(save.ms[i] || 0) < MSMAX ? ' · ' + (10 - (save.ms[i] || 0) % 10) + '단 뒤 발사·장전 5%↑' : ''})</span></button>` : `<button class="up" data-w="${i}" ${save.coins >= upCost(i) ? '' : 'disabled'}>강화 ${upCost(i)}</button>`) + '</div>'; }).join('') + `</div><div class="sup"><b>특수 탄창 (보유 최대 3개, '다음 판 사용'을 켠 것만 한 개씩 소모, 켜면 기록은 '보급' 기록으로 따로 비교)</b>` + SUPPLIES.map(x => `<span class="sg"><button class="sp" data-s="${x.id}" ${(save.sup[x.id] || 0) >= SUP_MAX || save.coins < x.p ? 'disabled' : ''}>${x.n} · ${x.e} · ${x.p}${save.sup[x.id] ? ' (보유 ' + save.sup[x.id] + ')' : ''}</button>${save.sup[x.id] ? `<button class="se${save.eq[x.id] ? ' on' : ''}" data-s="${x.id}">${save.eq[x.id] ? '다음 판 사용 ✔' : '다음 판 사용'}</button>` : ''}</span>`).join('') + `</div><div class="dex">수집 도감: ${dexHTML()}</div><button class="recbtn">기록 보기</button> <button class="pkbtn recbtn2">강화 효과</button><div class="recwrap"></div>`;
 }
 function modHTML(w) { const cur = save.md[w] || 0; return '<div class="mods">' + MODS[w].map((m, k) => { const own = save.mu[w + ':' + (k + 1)], on = cur === k + 1; return `<button class="md${on ? ' on' : ''}" data-w="${w}" data-k="${k + 1}" title="${m.e}" ${(!own && save.coins < m.p) ? 'disabled' : ''}>${m.n}${on ? ' ✔' : own ? '' : ' ' + m.p}</button>`; }).join('') + `</div><div class="cd${cur ? '' : ' mh'}" style="opacity:.75">${cur ? MODS[w][cur - 1].n + ': ' + MODS[w][cur - 1].e : '개조 선택(다시 누르면 해제)'}</div>`; }
 function legacyHTML() { const L = []; for (const k in save.bt2) { const m = /^([sc])(\d)d(\d)$/.exec(k); if (m) L.push(`${m[1] === 's' ? '새 모드' : '클래식'} 구역${m[2]} 난이도${+m[3] + 1} ${save.bt2[k]}초`); } for (const z in save.bestTime) L.push(`클래식 구역${z} 최단 ${save.bestTime[z]}초`); return L.length ? `<div class="old" style="font-size:12px;opacity:.8;margin:4px 0">구 기록(보급 사용 여부 불명, 새 무보급/보급 기록과 비교하지 않음): ${L.join(' · ')}</div>` : ''; }
@@ -708,7 +709,7 @@ function fire(nx, ny) {
   if (!TEST) {
     if (reloadT > 0 && reloadW === cw) return;
     if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 비었음<br>[1] 기본탄으로 바꿔 적을 맞히면 충전'; flashT = .7; return; }
-    ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
+    ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (modOf(cw).rl || 1) * msRl(cw) * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
   if (TEST) { const { best } = pickHit(nx, ny); if (best) applyHit(best); return; }
