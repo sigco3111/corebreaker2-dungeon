@@ -211,6 +211,8 @@ function breakProp(e) {
   sfx('prop'); e.dead = true; propsBroken++; save.dex[e.name] = (save.dex[e.name] || 0) + 1;
   let c = 0;
   for (let i = 0; i < e.n; i++) if (e.alive[i]) { removeVoxel(e, i, (c++ % 3) === 0, null); }
+  if (SUMMON && !summoned && c > 0 && typeof sgVal === 'number') { if (sgShotId !== shotSeq) { sgShotId = shotSeq; sgShotVox = 0; } const cap = SG_VOX * SG_NEED / 10; let add = c / sgW(cw); if (sgShotVox + add > cap) add = Math.max(0, cap - sgShotVox); sgShotVox += add; sgVox += add; sgVal = sgBase + sgVox / SG_VOX; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }   // 부서지며 남은 잔량도 게이지에 포함(대형 폭발이 방을 비울 때 게이지가 멈추지 않도록)
+  if (SUMMON && !summoned && props.every(p => p.dead)) { sgVal = SG_NEED; updSG(); summonGuardians(); }   // 부술 소품이 하나도 남지 않으면 즉시 소환(진행 불가 방지)
   e.mesh.instanceMatrix.needsUpdate = true; sc.remove(e.mesh);
   const cx = e.bb.getCenter(new THREE.Vector3());
   const coins = 1 + Math.min(4, Math.floor(e.total / 700));
