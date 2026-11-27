@@ -1,6 +1,6 @@
 <!doctype html><body><script>
-const KEY='cb2.save.v1'; localStorage.setItem(KEY,JSON.stringify({wu:[1,1,1,1,1],sup:{sg:2},eq:{},bt2:{s2d2:99.9,c2d2:77},bestTime:{2:55},hist:[{z:2,v:1,t:99,c:300,a:40}]}));
-const plan=[0,1,0], res=[];
+const KEY='cb2.save.v1'; localStorage.setItem(KEY,JSON.stringify({wu:[1,1,1,1,1],sup:{sg:4},eq:{},bt2:{s2d2:99.9,c2d2:77},bestTime:{2:55},hist:[{z:2,v:1,t:99,c:300,a:40}]}));
+const plan=(location.hash.slice(1)||'0,1,0').split(',').map(Number), res=[];
 function runOne(useSup){return new Promise(done=>{
  const sv=JSON.parse(localStorage.getItem(KEY)); sv.eq=useSup?{sg:1}:{}; localStorage.setItem(KEY,JSON.stringify(sv));
  const f=document.createElement('iframe');f.width=1266;f.height=585;f.style.border=0;f.src='../index.html?visit=3&zone=2&mode=summon&r='+Math.random();document.body.appendChild(f);

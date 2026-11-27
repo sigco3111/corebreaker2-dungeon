@@ -184,7 +184,7 @@ function damageProp(e, p, radius) {
     if (dx * dx + dy * dy + dz * dz < r2) { removeVoxel(e, i, (k++ % 2) === 0, null); }
   }
   e.mesh.instanceMatrix.needsUpdate = true;
-  if (SUMMON && !summoned && !e.dead && typeof sgVal === 'number') { const v = e.total > 1500 ? 2 : 1, tg = v * Math.min(1, (e.total - e.count) / (e.total * .6)), ad = tg - (e.sgGiven || 0); if (ad > 0) { e.sgGiven = tg; sgVal += ad; updSG(); } }   // 부술 때까지가 아니라 깎는 만큼 게이지가 찬다
+  if (SUMMON && !summoned && k > 0 && typeof sgVal === 'number') { sgVox += k; sgVal = sgBase + sgVox / SG_VOX; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }   // 소환 게이지는 깎은 복셀 양에 비례(구역 소품 구성과 상관없이 비슷한 시간)
   if (!e.dead && e.count < e.total * .4) breakProp(e);
 }
 // ---------- 효과음 (WebAudio 합성, 외부 에셋 없음) ----------
@@ -510,7 +510,7 @@ function clearOccluders(fx) {
 if (!SUMMON) clearOccluders(false);
 let TOTAL_PROPS = props.length; let autoCleared = 0;
 // ---- 소환 게이지: 정지 소품을 부수면 차오르고, 가득 차면 수호자 무리가 나타난다 ----
-const SG_NEED = Math.min(12, Math.max(8, Math.ceil(TOTAL_PROPS * .45))); let sgVal = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0;
+const SG_NEED = 12; const SG_VOX = +(q.get('sgvox') || 500); let sgVox = 0; const sgBase = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0; let sgVal = sgBase;
 const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:15vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
 sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
 function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.min(sgVal, SG_NEED)}/${SG_NEED}`; }
@@ -525,7 +525,7 @@ function summonGuardians() {
   for (const g of GS) for (const c in g.marks) relocateMark(g, c);
   sfx('warn'); shake = Math.max(shake, .3); setStatus(); updSG(); flashText('수호자 출현!<br>장비를 먼저 부숴라');
 }
-function addSummonGauge(e) { if (summoned) return; sgVal += (e.total > 1500 ? 2 : 1) - (e.sgGiven || 0); e.sgGiven = e.total > 1500 ? 2 : 1; updSG(); if (sgVal >= SG_NEED) summonGuardians(); }
+function addSummonGauge(e) { /* 게이지는 damageProp에서 복셀 양으로 채움 */ }
 
 // ---------- 사격 ----------
 const proj = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd54a }));
@@ -914,6 +914,6 @@ function runStage() {
   const d = document.createElement('div'); d.id = 'info'; d.style.cssText = 'position:fixed;left:0;top:0;color:#0f0;font-size:9px'; d.textContent = 'done:' + JSON.stringify(info); document.body.appendChild(d);
   renderer.render(sc, cam);
 }
-window.__cb2 = { blast, chainProps, bolts, frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get coins() { return totalCoins; } };
+window.__cb2 = { blast, chainProps, bolts, frameStep, resetLast(t) { last = t; }, get elapsed() { return elapsed; }, get bt2() { return save.bt2; }, setPaused, get paused() { return paused; }, get killed() { return killed; }, get newRecord() { return newRecord; }, ZR, collapse, breakProp, explodeAt, get DSPEED() { return D_SPEED; }, get totalCoinsNow() { return totalCoins; }, addCoins, MAGS: MAG, projectPoint: (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam); return [v.x, v.y]; }, aimInfo, showAim, get lastAim() { return lastAim; }, breakPart, update, fire, ammo, get gauge() { return gauge; }, get reloadT() { return reloadT; }, gaugeUp, save, pickHit, resolveShot, selectWeapon, WEAPONS, get cw() { return cw; }, GS, get deflects() { return deflects; }, cam, flying, get hits() { return hitsLanded; }, get broken() { return propsBroken; }, sim, fire, aimAt, props, key, THREE, eco: { wCd, wRad, wPierce, upCost, effLv, wLvl, save }, showResult, get sg() { return [sgVal, SG_NEED, summoned]; }, get sgVox() { return sgVox; }, get coins() { return totalCoins; } };
 setStatus(); selectWeapon(+(q.get('w') || 0));
 if (TEST) runStage(); else frame();
