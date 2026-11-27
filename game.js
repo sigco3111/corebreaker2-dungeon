@@ -337,7 +337,7 @@ function makeGuardian(typeKey, slot, idx) {
 }
 let KOFF = 0;   // (호환용) 사용 안 함
 const MOVE = !TEST || q.get('move') === '1';
-let flashT = 0, deflects = 0;
+let flashT = 0, deflects = 0, phOn = false;
 function gStatus(g) {
   if (g.kstate === 'guard') return `${g.name} 장비 ${g.partsBroken}/${Object.keys(g.PARTS).length}`;
   if (g.kstate === 'exposed') return `${g.name} <span style="color:#7ff">코어 노출!</span>`;
@@ -513,7 +513,7 @@ let TOTAL_PROPS = props.length; let autoCleared = 0;
 const SG_NEED = 12; const SG_VOX = +(q.get('sgvox') || 500); let sgVox = 0; const sgBase = SUPA.sg ? Math.ceil(SG_NEED * .25) : 0; let sgVal = sgBase;
 const sgEl = document.createElement('div'); sgEl.style.cssText = 'position:fixed;left:50%;top:15vmin;transform:translateX(-50%);width:34vmin;height:2.2vmin;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);border-radius:1.2vmin;overflow:hidden;z-index:6;display:none;font:700 1.5vmin sans-serif;color:#fff;text-align:center;line-height:2.2vmin';
 sgEl.innerHTML = '<div style="position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c0392b,#ffb040)"></div><span style="position:relative"></span>'; document.body.appendChild(sgEl);
-function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.min(sgVal, SG_NEED)}/${SG_NEED}`; }
+function updSG() { sgEl.firstChild.style.width = Math.min(100, sgVal / SG_NEED * 100) + '%'; sgEl.lastChild.textContent = summoned ? '수호자 전투' : `소환 게이지 ${Math.floor(Math.min(sgVal, SG_NEED))}/${SG_NEED}`; }
 if (SUMMON) {
   for (const g of GS) { g.kstate = 'dormant'; g.K.mesh.visible = false; g.aura.visible = false; for (const c in g.marks) g.marks[c].sp.visible = false; }
   sgEl.style.display = 'block'; updSG(); $('tc').innerHTML = '소품을 부숴 소환 게이지를 채우세요<br>가득 차면 수호자가 나타납니다';
@@ -676,7 +676,7 @@ function updBar() {
   [...b.children].forEach(d => { const i = +d.dataset.i; if (isNaN(i)) return; const W = WEAPONS[i];
     let t = `[${i + 1}] ${W.n} Lv${wLvl(i)}`;
     if (i !== 2) t += reloadT > 0 && reloadW === i ? ' 장전중…' : ` ${ammo[i]}/${magN(i)}`;
-    else t += ammo[2] > 0 ? ` ${ammo[2]}발 · 방패 관통` : ` 게이지 ${Math.round(gauge)}%`;
+    else t += ammo[2] > 0 ? ` ${ammo[2]}발 · 방패 관통` : ` 비었음 · 게이지 ${Math.round(gauge)}%`;
     if (d.textContent !== t) d.textContent = t; });
 }
 window.addEventListener('keydown', e => {
@@ -707,7 +707,7 @@ function fire(nx, ny) {
   if (cooldown > 0 || false) return;
   if (!TEST) {
     if (reloadT > 0 && reloadW === cw) return;
-    if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 탄약 없음<br>적을 명중해 게이지 충전'; flashT = .7; return; }
+    if (cw === 2 && ammo[2] <= 0) { $('tc').innerHTML = '관통탄 비었음<br>[1] 기본탄으로 바꿔 적을 맞히면 충전'; flashT = .7; return; }
     ammo[cw]--; if (cw !== 2 && ammo[cw] <= 0) { reloadT = MAG[cw].rl * (ZR.rl || 1) * (SUPA.rl ? .6 : 1); reloadW = cw; }
   }
   cooldown = TEST ? 0 : wCd(cw); shots++; sfx('shot');
@@ -874,6 +874,8 @@ function update(dt) {
   updBar();
   if (started && !killed) { elapsed += (clockDt === null ? dt : clockDt); if (GS.every(q => q.kstate === 'collapse' || q.kstate === 'done')) { killed = true; const b0 = bestSec(); if (!b0 || elapsed < b0) { newRecord = true; save.bt2[BTK] = +elapsed.toFixed(2); if (!TEST) writeSave(save); } } } clockDt = null; updTimer();
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) setStatus(); }
+  { const r = $('tc').getBoundingClientRect(); const ty = Math.round(r.bottom + 4) + 'px'; if (sgEl.style.top !== ty) sgEl.style.top = ty; }   // 게이지는 안내문 바로 아래(줄 수에 따라 따라 내려감)
+  { const ph = !TEST && cw === 2 && ammo[2] <= 0 && (summoned || !SUMMON); if (ph && flashT <= 0) { const t = `관통탄 비었음 (게이지 ${Math.round(gauge)}%)<br>[1] 기본탄으로 바꿔 적을 맞히면 충전`; if ($('tc').innerHTML !== t) $('tc').innerHTML = t; phOn = true; } else if (!ph && phOn) { phOn = false; setStatus(); } }
   updateFlying(dt); updateDebris(dt); showAim();
   for (const g of GS) { if (MOVE && started && (g.kstate === 'guard' || g.kstate === 'exposed')) updateGuardian(g, dt); if (g.kstate === 'collapse') updateCollapse(g, dt); if (g.coreMesh && g.kstate === 'exposed') { const p = 1 + Math.sin(performance.now() / 160) * .06; g.coreMesh.scale.setScalar(p); } }
   if (shake > 0) { shake = Math.max(0, shake - dt * 1.6); cam.position.set(shakeBase.x + (Math.random() - .5) * shake * .25, shakeBase.y + (Math.random() - .5) * shake * .2, shakeBase.z); } else cam.position.copy(shakeBase);

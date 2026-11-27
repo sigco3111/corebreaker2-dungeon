@@ -1,0 +1,22 @@
+<!doctype html><body><script>
+const f=document.createElement('iframe');f.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0';document.body.style.cssText='margin:0;overflow:hidden';f.src='../index.html?visit=1&zone='+(location.hash.slice(1)||3)+'&mode=summon';document.body.appendChild(f);
+f.onload=()=>setTimeout(()=>{try{const d=f.contentDocument,C=f.contentWindow.__cb2,T=C.THREE;C.save.wu=[1,1,1,1,1];C.selectWeapon(0);d.getElementById('go').click();
+const proj=p=>p.clone().project(C.cam);
+function aimProp(){for(const e of C.props){if(e.dead)continue;const step=Math.max(1,Math.floor(e.n/60));for(let i=0;i<e.n;i+=step){if(!e.alive[i])continue;const v=proj(new T.Vector3(e.pos[i*3],e.pos[i*3+1],e.pos[i*3+2]));if(Math.abs(v.x)>1||Math.abs(v.y)>1)continue;const b=C.pickHit(v.x,v.y).best;if(b&&b.kind==='prop'&&b.e===e)return [v.x,v.y];}}return null;}
+const ring=(g,c)=>{const m=g.marks[c];return C.projectPoint(m.x+g.off,m.y+.04+(g.bob||0),m.z+.25);};
+const STAGE=+(location.hash.split('&')[1]||1);const ev=[];let t=0,sw=0,pierceShots=0,refills=0,lastA2=null,clear=null;
+for(let s=0;s<30*300;s++){C.update(1/30);t+=1/30;if(C.GS.every(g=>g.kstate==='done')){clear=+t.toFixed(1);break;}
+ const a2=C.ammo[2];
+ if(lastA2!==null&&a2>lastA2&&a2>=3)refills++; lastA2=a2;
+ if(!C.sg[2]){if(STAGE===0&&s>=150){C.update(1/30);break;}const a=(s%5===0)?aimProp():null;if(a)C.fire(a[0],a[1]);continue;}
+ const g=C.GS.find(g=>g.kstate==='guard'||g.kstate==='exposed');if(!g)continue;
+ let want=(STAGE===2&&C.ammo[2]===0)?0:(C.ammo[2]>0?2:0); if(STAGE===1)want=2; if(C.cw!==want){C.selectWeapon(want);sw++;ev.push({t:+t.toFixed(1),sw:want,ammo2:C.ammo[2],gauge:Math.round(C.gauge)});}
+ if(STAGE===1&&C.cw===2&&C.ammo2z===undefined&&C.ammo[2]===0){C.fire(0,0);for(let k=0;k<4;k++)C.update(1/30);break;}
+ if(STAGE===2&&C.cw===0&&C.ammo[2]===0&&C.gauge>=25&&C.gauge<45){for(let k=0;k<3;k++)C.update(1/30);break;}
+ if(g.gmode==='block'&&C.cw!==2)continue;
+ let a=null;if(g.kstate==='exposed'){const p=g.CORE;a=C.projectPoint(p.x+g.off,p.y+(g.bob||0),p.z);}else{const c=Object.keys(g.PARTS).find(c=>g.PARTS[c].alive);if(c)a=ring(g,c);}
+ const n0=C.flying.length; if(a){C.fire(a[0],a[1]);if(C.flying.length>n0&&C.cw===2)pierceShots++;}
+}
+document.title='RES'+JSON.stringify({clear,switches:sw,pierceShots,refills,ev:ev.slice(0,12),states:C.GS.map(g=>g.kstate).join(','),ammo2:C.ammo[2],gauge:Math.round(C.gauge)});
+}catch(e){document.title='ERR'+e.message+(e.stack||'').slice(0,200)}},2500);
+</script>
