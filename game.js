@@ -657,7 +657,7 @@ const PERKS = ['Lv7 탄창 +2 · Lv10 탄창 +2', 'Lv7 탄창 +1 · Lv10 탄창 
 let cw = 0;
 const wLvl = w => save.wl[w] || 1;
 const MSDESC = ['직접 피해 +3%', '파편 피해 +3%', '관통 피해 +3%', '폭발 반경·장비 피해 +3%', '번개 피해 +3%'];
-const msCost = w => { const r = save.ms[w] || 0; return Math.round(300 * Math.pow(1.15, r) / 10) * 10; }, msMul = w => 1 + .03 * (save.ms[w] || 0), MSMAX = 99;   // 사실상 무한 소모처(99단 누적 약 21억 코인, 수년치)이되 가격·피해·저장 숫자 오버플로 방지를 위한 안전 상한. 곡선 1.2→1.15 완화
+const msCost = w => { const r = save.ms[w] || 0; return Math.round(300 * Math.pow(1.15, Math.min(r, 15)) * Math.pow(1.03, Math.max(0, r - 15)) / 10) * 10; }, msMul = w => 1 + .03 * (save.ms[w] || 0), MSMAX = 99;   // 소모처(99단 누적 약 90만 코인)이되 가격·피해·저장 숫자 오버플로 방지를 위한 안전 상한. 곡선 1.2→1.15, 후기 성장벽 완화로 15단 초과분은 ×1.03(난이도가 방문마다 선형 상승하므로 각인 단가도 완만해야 추격 가능)
 const msStep = w => Math.min(5, Math.floor((save.ms[w] || 0) / 10)), msCdM = w => 1 - .05 * msStep(w), msRl = w => 1 - .05 * msStep(w);   // 각인 10단마다 발사 간격과 장전 시간 각 -5%씩(최대 -25%)
 const LVMAX = 10, effLv = w => { const L = wLvl(w); return L <= 5 ? L : 5 + (L - 5) * .5; };   // 6~10단계는 증가폭 절반
 const wCd = w => WEAPONS[w].cd * (1 - .06 * (effLv(w) - 1)) * (modOf(w).cd || 1) * msCdM(w);

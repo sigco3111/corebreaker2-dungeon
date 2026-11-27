@@ -3,7 +3,7 @@
 // A: 빈 저장 → showResult() 2회 → visits 중복 없는지. 리로드 후 재클리어 → visits 2.
 // B: 구버전 부분 visits({2:1,5:3}) → cycle 1, diff 상한 9.
 // C: 전 구역 visits 1 → cycle 2, diff 상한 10. 리로드 후에도 유지.
-// D: 각인 98단 저장 → 상점 가격이 1.15 곡선, 99단 → 버튼 disabled. 기존 ms 12단 보존.
+// D: 각인 98단 저장 → 상점 가격이 2구간 곡선(≤15단 1.15, 이후 1.03), 99단 → 버튼 disabled. 기존 ms 12단 보존.
 const H = location.hash.slice(1) || 'A';
 const f = document.getElementById('f');
 const read = () => JSON.parse(localStorage.getItem('cb2.save.v1') || '{}');
@@ -52,7 +52,7 @@ setTimeout(async () => {
       const btns = [...d.querySelectorAll('button.ms')];
       out.msBtn0 = btns[0] ? btns[0].textContent.replace(/\s+/g, ' ').slice(0, 60) + ' disabled=' + btns[0].disabled : 'none';
       out.msKept = JSON.stringify(C.save.ms);
-      out.price98 = Math.round(300 * Math.pow(1.15, 98) / 10) * 10;
+      out.price98 = Math.round(300 * Math.pow(1.15, 15) * Math.pow(1.03, 83) / 10) * 10;
       write({ ms: [99, 0, 0, 0, 0], wl: [10, 10, 10, 10, 10], wu: [1, 1, 1, 1, 1], coins: 1e12 });
       await load('zone=2&mode=summon&test=1');
       const d2 = f.contentDocument;
