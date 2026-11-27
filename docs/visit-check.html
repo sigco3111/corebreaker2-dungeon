@@ -1,0 +1,66 @@
+<!doctype html><meta charset="utf-8"><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+// visits/회차/각인 저장 검증. hash 형식: 시나리오
+// A: 빈 저장 → showResult() 2회 → visits 중복 없는지. 리로드 후 재클리어 → visits 2.
+// B: 구버전 부분 visits({2:1,5:3}) → cycle 1, diff 상한 9.
+// C: 전 구역 visits 1 → cycle 2, diff 상한 10. 리로드 후에도 유지.
+// D: 각인 98단 저장 → 상점 가격이 1.15 곡선, 99단 → 버튼 disabled. 기존 ms 12단 보존.
+const H = location.hash.slice(1) || 'A';
+const f = document.getElementById('f');
+const read = () => JSON.parse(localStorage.getItem('cb2.save.v1') || '{}');
+const write = o => localStorage.setItem('cb2.save.v1', JSON.stringify(o));
+const load = q => new Promise(res => { f.onload = () => setTimeout(res, 800); f.src = '../index.html?' + q; });
+const out = {};
+setTimeout(async () => {
+  try {
+    if (H === 'A') {
+      localStorage.removeItem('cb2.save.v1');
+      await load('zone=2&mode=summon&test=1');
+      let C = f.contentWindow.__cb2;
+      out.cycleFresh = C.cycle; out.diffFresh = C.diff;
+      C.showResult(); const v1 = (read().visits || {})[2];
+      C.showResult(); const v2 = (read().visits || {})[2];   // 중복 호출
+      out.visitsAfterDoubleShowResult = [v1, v2];
+      const coins1 = read().coins;
+      await load('zone=2&mode=summon&test=1');   // 새로고침과 동일(새 로드)
+      C = f.contentWindow.__cb2;
+      out.visitParamExpected2 = C.save.visits[2];   // 저장값 그대로 1이어야(로드시 +1은 URL 파라미터 없을 때 VISIT 계산용, 저장은 클리어 시에만)
+      C.showResult(); out.visitsAfterReclear = (read().visits || {})[2];
+      out.cycleAfter = C.cycle; out.coinsDouble = [coins1, read().coins];
+    } else if (H === 'B') {
+      write({ visits: { 2: 1, 5: 3 } });
+      await load('zone=3&mode=summon&test=1');
+      const C = f.contentWindow.__cb2;
+      out.cyclePartial = C.cycle; out.diffPartial = C.diff; out.visitsKept = JSON.stringify(C.save.visits);
+    } else if (H === 'C') {
+      write({ visits: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1 } });   // 구역8만 미클리어: 완주 직전
+      await load('zone=8&mode=summon&test=1');
+      let C = f.contentWindow.__cb2;
+      out.cycleBeforeFinal = C.cycle;
+      C.showResult();   // 마지막 구역 클리어 → 완주 배너가 떠야 함
+      out.bannerShown = f.contentDocument.getElementById('ov').textContent.includes('2회차 시작');
+      out.bannerText = (f.contentDocument.getElementById('ov').textContent || '').replace(/\s+/g, ' ').slice(0, 200);
+      write({ visits: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 } });
+      await load('zone=2&mode=summon&test=1');
+      C = f.contentWindow.__cb2;
+      out.cycleAll1 = C.cycle; out.diffAll1 = C.diff;
+      out.ovHasCycle = f.contentDocument.getElementById('ov').textContent.includes('2회차');
+      out.ovText = (f.contentDocument.getElementById('ov').textContent || '').replace(/\s+/g, ' ').slice(0, 150);
+    } else if (H === 'D') {
+      write({ ms: [98, 12, 0, 0, 0], wl: [10, 10, 10, 10, 10], wu: [1, 1, 1, 1, 1], coins: 1e12, visits: { 2: 1 } });
+      await load('zone=2&mode=summon&test=1');
+      const C = f.contentWindow.__cb2, d = f.contentDocument;
+      const btns = [...d.querySelectorAll('button.ms')];
+      out.msBtn0 = btns[0] ? btns[0].textContent.replace(/\s+/g, ' ').slice(0, 60) + ' disabled=' + btns[0].disabled : 'none';
+      out.msKept = JSON.stringify(C.save.ms);
+      out.price98 = Math.round(300 * Math.pow(1.15, 98) / 10) * 10;
+      write({ ms: [99, 0, 0, 0, 0], wl: [10, 10, 10, 10, 10], wu: [1, 1, 1, 1, 1], coins: 1e12 });
+      await load('zone=2&mode=summon&test=1');
+      const d2 = f.contentDocument;
+      const b2 = [...d2.querySelectorAll('button.ms')][0];
+      out.msBtn99 = b2 ? b2.textContent.replace(/\s+/g, ' ').slice(0, 60) + ' disabled=' + b2.disabled : 'none';
+      out.cdMulAt99 = f.contentWindow.__cb2.eco.wCd(0).toFixed(4);
+    }
+    document.title = 'done:' + JSON.stringify(out);
+  } catch (e) { document.title = 'err:' + e.message + ' ' + (e.stack || '').split('\n')[1]; }
+}, 6000);
+</script>

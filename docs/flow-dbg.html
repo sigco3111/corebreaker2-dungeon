@@ -1,4 +1,4 @@
-<!doctype html><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
+<!doctype html><meta charset="utf-8"><title>run</title><iframe id=f width=1266 height=585 style="border:0"></iframe><script>
 {const H0=location.hash.slice(1).split('&');const S=H0[5]?Object.fromEntries(H0[5].split(',').map(k=>[k,1])):{};localStorage.setItem('cb2.save.v1',JSON.stringify({sup:S,eq:S}));}
 const H=location.hash.slice(1).split('&');const WP=+(H[1]||0);const f=document.getElementById('f');if(H[2]==='full'){document.body.style.cssText='margin:0;overflow:hidden';f.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0';}else if(H[2]){const [w,h]=H[2].split('x');f.width=w;f.height=h;}f.src='../index.html?visit=3&zone='+(H[0]||1)+'&mode=summon';
 setTimeout(()=>{try{const d=f.contentDocument;d.getElementById('go').click();const C=f.contentWindow.__cb2;const T=C.THREE;
